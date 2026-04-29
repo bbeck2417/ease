@@ -13,7 +13,10 @@ import {
 } from "react-native";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { RootStackParamList } from "../../App";
 import * as Linking from "expo-linking";
 import * as Haptics from "expo-haptics";
@@ -46,6 +49,7 @@ const StruggleScreen = () => {
   const scaleValue = useRef(new Animated.Value(1)).current;
   const isBreathingRef = useRef(false);
   const rampTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const insets = useSafeAreaInsets();
 
   // --- CRITICAL FIX: Mantra Reference ---
   // This ref ensures the animation loop always sees the latest mantra count
@@ -210,7 +214,11 @@ const StruggleScreen = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#2D3436" }}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
@@ -417,11 +425,10 @@ const StruggleScreen = () => {
 const styles = StyleSheet.create({
   scrollContent: {
     alignItems: "center",
-    paddingVertical: 40,
     paddingHorizontal: 24,
-    paddingBottom: 60,
+    justifyContent: "space-between",
   },
-  header: { width: "100%", alignItems: "center", marginBottom: 20 },
+  header: { width: "100%", alignItems: "center" },
   headerTopRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -445,7 +452,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontFamily: "Quicksand-Regular",
   },
-  bubbleContainer: { marginVertical: 30 },
+  bubbleContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 180,
+  },
   pressableArea: {
     alignItems: "center",
     justifyContent: "center",
@@ -461,7 +473,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Quicksand-Regular",
   },
-  buttonGroup: { width: "100%", gap: 16 },
+  buttonGroup: { width: "100%", gap: 12 },
   groundingButton: { paddingVertical: 15, alignItems: "center" },
   groundingText: {
     color: "#55E6C1",
@@ -474,7 +486,7 @@ const styles = StyleSheet.create({
   halfButton: {
     flex: 1,
     backgroundColor: "#34495e",
-    paddingVertical: 20,
+    paddingVertical: 16,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
@@ -489,7 +501,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     borderWidth: 2,
     borderColor: "#55E6C1",
-    paddingVertical: 18,
+    paddingVertical: 16,
     borderRadius: 20,
     flexDirection: "row",
     justifyContent: "center",
@@ -504,7 +516,7 @@ const styles = StyleSheet.create({
   },
   sosButton: {
     backgroundColor: "#D63031",
-    paddingVertical: 20,
+    paddingVertical: 26,
     borderRadius: 20,
     flexDirection: "row",
     justifyContent: "center",
