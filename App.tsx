@@ -1,5 +1,5 @@
 import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
@@ -12,6 +12,7 @@ import StruggleScreen from "./src/screens/StruggleScreen";
 import ResourceScreen from "./src/screens/ResourceScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import MoodScreen from "./src/screens/MoodScreen";
+import { colors } from "./src/theme/colors";
 
 export type RootStackParamList = {
   Struggle: undefined;
@@ -21,6 +22,14 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const DarkAppTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: colors.dark, // Set to #2D3436
+  },
+};
 
 export default function App() {
   // Load fonts using the useFonts hook
@@ -36,12 +45,13 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer theme={DarkAppTheme}>
         <Stack.Navigator
           initialRouteName="Struggle"
           screenOptions={{
             headerShown: false,
             animation: "fade",
+            contentStyle: { backgroundColor: colors.dark },
           }}
         >
           <Stack.Screen name="Struggle" component={StruggleScreen} />
