@@ -13,12 +13,14 @@ import StruggleScreen from "./src/screens/StruggleScreen";
 import ResourceScreen from "./src/screens/ResourceScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import MoodScreen from "./src/screens/MoodScreen";
+import HeartRateSensor from "./src/screens/HeartRateSensor";
 
 export type RootStackParamList = {
   Struggle: undefined;
   Resources: undefined;
   Settings: undefined;
   Mood: undefined;
+  HeartRate: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -49,6 +51,7 @@ export default function App() {
           <Stack.Screen name="Resources" component={ResourceScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="Mood" component={MoodScreen} />
+          <Stack.Screen name="HeartRate" component={HeartRateSensor} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

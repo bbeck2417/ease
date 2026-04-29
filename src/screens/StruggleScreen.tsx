@@ -229,17 +229,33 @@ const StruggleScreen = () => {
       >
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
+            {/* NEW: Heart Icon (Left) */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.navigate("HeartRate");
+              }}
+              style={styles.headerLeftButton}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            >
+              <Heart color={colors.secondary} size={28} />
+            </Pressable>
+
             <Text style={styles.title}>Ease</Text>
+
+            {/* FIXED: Gear Icon (Right) */}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 navigation.navigate("Settings");
               }}
-              style={styles.settingsButton}
+              style={styles.headerRightButton}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
               <Settings color={colors.primary} size={28} />
             </Pressable>
           </View>
+
           <Text style={styles.mantraDisplay}>
             "
             {mantras.length > 0
@@ -336,6 +352,7 @@ const StruggleScreen = () => {
             <Pressable
               style={styles.closeButton}
               onPress={() => setGroundingModalVisible(false)}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
               <X color="white" size={24} />
             </Pressable>
@@ -375,28 +392,52 @@ const StruggleScreen = () => {
                 <Shield color="#55E6C1" size={24} />
                 <Text style={styles.modalTitle}>Safe Team</Text>
               </View>
-              <Pressable onPress={() => setContactsModalVisible(false)}>
+              <Pressable
+                onPress={() => setContactsModalVisible(false)}
+                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+              >
                 <X color="white" size={24} />
               </Pressable>
             </View>
             <ScrollView
               style={styles.modalScroll}
+              contentContainerStyle={{ paddingBottom: 20 }}
               showsVerticalScrollIndicator={false}
             >
-              {contacts.map((contact) => (
-                <View key={contact.id} style={styles.dataCard}>
-                  <View>
-                    <Text style={styles.cardMain}>{contact.name}</Text>
-                    <Text style={styles.cardSub}>{contact.phone}</Text>
+              {contacts.length > 0 ? (
+                contacts.map((contact) => (
+                  <View key={contact.id} style={styles.dataCard}>
+                    <View>
+                      <Text style={styles.cardMain}>{contact.name}</Text>
+                      <Text style={styles.cardSub}>{contact.phone}</Text>
+                    </View>
+                    <Pressable
+                      onPress={() => Linking.openURL(`tel:${contact.phone}`)}
+                      style={styles.cardCallButton}
+                    >
+                      <Phone color={colors.primary} size={20} />
+                    </Pressable>
                   </View>
+                ))
+              ) : (
+                <View style={styles.emptyStateContainer}>
+                  <Text style={styles.stepSubText}>
+                    No Safe Contacts added yet.
+                  </Text>
                   <Pressable
-                    onPress={() => Linking.openURL(`tel:${contact.phone}`)}
-                    style={styles.cardCallButton}
+                    style={styles.emptyStateButton}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setContactsModalVisible(false);
+                      navigation.navigate("Settings");
+                    }}
                   >
-                    <Phone color="#55E6C1" size={20} />
+                    <Text style={styles.emptyStateButtonText}>
+                      Add Safe Contact
+                    </Text>
                   </Pressable>
                 </View>
-              ))}
+              )}
             </ScrollView>
           </View>
         </View>
@@ -417,6 +458,7 @@ const StruggleScreen = () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setMantrasModalVisible(false);
                 }}
+                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               >
                 <X color="white" size={24} />
               </Pressable>
@@ -424,7 +466,7 @@ const StruggleScreen = () => {
 
             <ScrollView
               style={styles.modalScroll}
-              contentContainerStyle={{ paddingBottom: 20 }} // Ensures the last mantra isn't clipped
+              contentContainerStyle={{ paddingBottom: 20 }}
               showsVerticalScrollIndicator={false}
             >
               {mantras.length > 0 ? (
@@ -434,14 +476,19 @@ const StruggleScreen = () => {
                   </View>
                 ))
               ) : (
-                <Text
-                  style={[
-                    styles.cardSub,
-                    { textAlign: "center", marginTop: 20 },
-                  ]}
-                >
-                  No mantras added yet. Visit Settings to add some.
-                </Text>
+                <View style={styles.emptyStateContainer}>
+                  <Text style={styles.stepSubText}>No mantras added yet.</Text>
+                  <Pressable
+                    style={styles.emptyStateButton}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setMantrasModalVisible(false);
+                      navigation.navigate("Settings");
+                    }}
+                  >
+                    <Text style={styles.emptyStateButtonText}>Add Mantra</Text>
+                  </Pressable>
+                </View>
               )}
             </ScrollView>
           </View>
@@ -471,12 +518,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "100%",
+    height: 50,
     position: "relative",
   },
-  settingsButton: {
+  headerLeftButton: {
+    position: "absolute",
+    left: 0,
+    width: 48, // Forces the physical tap width
+    height: 48, // Forces the physical tap height
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
+  },
+  headerRightButton: {
     position: "absolute",
     right: 0,
-    padding: 5,
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
   },
   title: {
     color: "white",
@@ -627,6 +690,11 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignSelf: "flex-end",
+    width: 48,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
   stepContent: {
     alignItems: "center",
@@ -695,6 +763,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Quicksand-Bold",
     textDecorationLine: "underline",
+  },
+  emptyStateContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 40,
+    gap: 20,
+  },
+  emptyStateButton: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 15,
+  },
+  emptyStateButtonText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: "bold",
+    fontFamily: "Quicksand-Regular",
   },
 });
 

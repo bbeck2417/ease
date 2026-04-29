@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "ease",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -13,28 +14,40 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.billybeck.easeapp",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Ease uses your location to find the nearest mental health clinics and crisis centers."
-      },
-      "supportsTablet": true
+        "NSLocationWhenInUseUsageDescription": "Ease uses your location to find the nearest mental health clinics and crisis centers.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Ease uses your location to provide local resources during a mental health episode."
+      }
     },
     "android": {
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.billybeck.easeapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      "expo-dev-client",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "Ease uses the camera and flashlight to measure your pulse for grounding exercises.",
+          "enableMicrophonePermission": false
+        }
+      ]
     ]
   }
 }

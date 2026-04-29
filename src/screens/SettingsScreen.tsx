@@ -97,7 +97,14 @@ const SettingsScreen = () => {
   return (
     <View style={{ flex: 1, backgroundColor: "#2D3436" }}>
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.goBack(); // This is the magic function that pops the screen off
+          }}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
           <ArrowLeft color="#55E6C1" size={28} />
         </Pressable>
         <Text style={styles.title}>Settings</Text>
@@ -245,6 +252,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   cardSub: { color: "#B2BEC3", fontSize: 16, fontFamily: "Quicksand-Regular" },
+  backButton: {
+    width: 48,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
 });
 
 export default SettingsScreen;
