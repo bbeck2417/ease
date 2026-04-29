@@ -13,7 +13,10 @@ import {
 } from "react-native";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { RootStackParamList } from "../../App";
 import * as Linking from "expo-linking";
 import * as Haptics from "expo-haptics";
@@ -34,11 +37,13 @@ import {
   BookOpen,
   Heart,
 } from "lucide-react-native";
+import { colors } from "../theme/colors";
 import { initDB } from "../utils/db";
 
 const { width, height } = Dimensions.get("window");
 
 const StruggleScreen = () => {
+  const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -181,36 +186,45 @@ const StruggleScreen = () => {
 
   const groundingSteps = [
     {
-      icon: <Eye color="#55E6C1" size={40} />,
+      icon: <Eye color={colors.primary} size={40} />,
       label: "5 things you SEE",
       sub: "Look around you. Focus on the details.",
     },
     {
-      icon: <Hand color="#55E6C1" size={40} />,
+      icon: <Hand color={colors.primary} size={40} />,
       label: "4 things you can TOUCH",
       sub: "Feel the texture of your clothes or chair.",
     },
     {
-      icon: <Ear color="#55E6C1" size={40} />,
+      icon: <Ear color={colors.primary} size={40} />,
       label: "3 things you HEAR",
       sub: "Listen for distant or quiet sounds.",
     },
     {
-      icon: <Pizza color="#55E6C1" size={40} />,
+      icon: <Pizza color={colors.primary} size={40} />,
       label: "2 things you can SMELL",
       sub: "Breathe in deeply through your nose.",
     },
     {
-      icon: <Activity color="#55E6C1" size={40} />,
+      icon: <Activity color={colors.primary} size={40} />,
       label: "1 thing you can TASTE",
       sub: "Focus on the inside of your mouth.",
     },
   ];
 
+  const opacityValue = scaleValue.interpolate({
+    inputRange: [1, 1.8],
+    outputRange: [0.2, 0.8],
+  });
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#2D3436" }}>
+    <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 80 }, // Bumped to 80 for iPhone 17 Pro
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
@@ -223,7 +237,7 @@ const StruggleScreen = () => {
               }}
               style={styles.settingsButton}
             >
-              <Settings color="#55E6C1" size={28} />
+              <Settings color={colors.primary} size={28} />
             </Pressable>
           </View>
           <Text style={styles.mantraDisplay}>
@@ -242,7 +256,8 @@ const StruggleScreen = () => {
                 styles.bubble,
                 {
                   transform: [{ scale: scaleValue }],
-                  backgroundColor: isBreathing ? "#55E6C1" : "#636e72",
+                  backgroundColor: isBreathing ? colors.primary : colors.muted,
+                  opacity: opacityValue,
                 },
               ]}
             />
@@ -260,9 +275,10 @@ const StruggleScreen = () => {
             onPress={() => navigation.navigate("Mood")}
             style={styles.moodCheckButton}
           >
-            <Heart color="#fab1a0" size={20} />
+            <Heart color={colors.secondary} size={20} />
             <Text style={styles.moodCheckText}>Log your mood for today</Text>
           </Pressable>
+
           <Pressable
             onPress={() => setGroundingModalVisible(true)}
             style={styles.groundingButton}
@@ -278,7 +294,7 @@ const StruggleScreen = () => {
               }}
               style={styles.halfButton}
             >
-              <Users color="#55E6C1" size={24} />
+              <Users color={colors.primary} size={24} />
               <Text style={styles.halfButtonText}>Safe Team</Text>
             </Pressable>
             <Pressable
@@ -288,7 +304,7 @@ const StruggleScreen = () => {
               }}
               style={styles.halfButton}
             >
-              <BookOpen color="#55E6C1" size={24} />
+              <BookOpen color={colors.primary} size={24} />
               <Text style={styles.halfButtonText}>Mantras</Text>
             </Pressable>
           </View>
@@ -297,7 +313,7 @@ const StruggleScreen = () => {
             onPress={() => navigation.navigate("Resources")}
             style={styles.secondaryButton}
           >
-            <MapPin color="#55E6C1" size={20} />
+            <MapPin color={colors.primary} size={20} />
             <Text style={styles.secondaryButtonText}>Find Nearby Help</Text>
           </Pressable>
 
@@ -310,6 +326,8 @@ const StruggleScreen = () => {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* --- MODALS BELOW THIS LINE REMAIN THE SAME --- */}
 
       {/* Grounding Modal */}
       <Modal animationType="slide" transparent visible={groundingModalVisible}>
@@ -387,41 +405,67 @@ const StruggleScreen = () => {
       {/* Mantras Modal */}
       <Modal animationType="slide" transparent visible={mantrasModalVisible}>
         <View style={styles.modalOverlay}>
+          {/* Removed the duplicate modalContentLarge wrapper here */}
           <View style={styles.modalContentLarge}>
             <View style={styles.modalHeader}>
               <View style={styles.row}>
                 <BookOpen color="#55E6C1" size={24} />
                 <Text style={styles.modalTitle}>My Mantras</Text>
               </View>
-              <Pressable onPress={() => setMantrasModalVisible(false)}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setMantrasModalVisible(false);
+                }}
+              >
                 <X color="white" size={24} />
               </Pressable>
             </View>
+
             <ScrollView
               style={styles.modalScroll}
+              contentContainerStyle={{ paddingBottom: 20 }} // Ensures the last mantra isn't clipped
               showsVerticalScrollIndicator={false}
             >
-              {mantras.map((mantra) => (
-                <View key={mantra.id} style={styles.dataCard}>
-                  <Text style={styles.cardMain}>{mantra.text}</Text>
-                </View>
-              ))}
+              {mantras.length > 0 ? (
+                mantras.map((mantra) => (
+                  <View key={mantra.id} style={styles.dataCard}>
+                    <Text style={styles.cardMain}>{mantra.text}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text
+                  style={[
+                    styles.cardSub,
+                    { textAlign: "center", marginTop: 20 },
+                  ]}
+                >
+                  No mantras added yet. Visit Settings to add some.
+                </Text>
+              )}
             </ScrollView>
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 24,
-    paddingBottom: 60,
+  container: {
+    flex: 1,
+    backgroundColor: colors.dark,
   },
-  header: { width: "100%", alignItems: "center", marginBottom: 20 },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  header: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 20,
+  },
   headerTopRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -429,7 +473,11 @@ const styles = StyleSheet.create({
     width: "100%",
     position: "relative",
   },
-  settingsButton: { position: "absolute", right: 0, padding: 5 },
+  settingsButton: {
+    position: "absolute",
+    right: 0,
+    padding: 5,
+  },
   title: {
     color: "white",
     fontSize: 32,
@@ -437,7 +485,7 @@ const styles = StyleSheet.create({
     fontFamily: "Quicksand-Regular",
   },
   mantraDisplay: {
-    color: "#55E6C1",
+    color: colors.primary,
     fontSize: 16,
     fontStyle: "italic",
     marginTop: 10,
@@ -445,15 +493,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontFamily: "Quicksand-Regular",
   },
-  bubbleContainer: { marginVertical: 30 },
+  bubbleContainer: {
+    marginVertical: 30,
+  },
   pressableArea: {
     alignItems: "center",
     justifyContent: "center",
     width: width * 0.6,
     height: width * 0.6,
   },
-  bubble: { width: 160, height: 160, borderRadius: 80, opacity: 0.4 },
-  iconOverlay: { position: "absolute", alignItems: "center" },
+  bubble: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+  },
+  iconOverlay: {
+    position: "absolute",
+    alignItems: "center",
+  },
   tapText: {
     color: "white",
     marginTop: 12,
@@ -461,19 +518,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Quicksand-Regular",
   },
-  buttonGroup: { width: "100%", gap: 16 },
-  groundingButton: { paddingVertical: 15, alignItems: "center" },
+  buttonGroup: {
+    width: "100%",
+    gap: 16,
+  },
+  groundingButton: {
+    paddingVertical: 15,
+    alignItems: "center",
+  },
   groundingText: {
-    color: "#55E6C1",
+    color: colors.primary,
     fontSize: 16,
     fontWeight: "600",
     textDecorationLine: "underline",
     fontFamily: "Quicksand-Regular",
   },
-  quickAccessRow: { flexDirection: "row", gap: 12, width: "100%" },
+  quickAccessRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
   halfButton: {
     flex: 1,
-    backgroundColor: "#34495e",
+    backgroundColor: colors.surface,
     paddingVertical: 20,
     borderRadius: 20,
     alignItems: "center",
@@ -488,7 +555,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     borderWidth: 2,
-    borderColor: "#55E6C1",
+    borderColor: colors.primary,
     paddingVertical: 18,
     borderRadius: 20,
     flexDirection: "row",
@@ -497,19 +564,18 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   secondaryButtonText: {
-    color: "#55E6C1",
+    color: colors.primary,
     fontSize: 18,
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
   },
   sosButton: {
-    backgroundColor: "#D63031",
+    backgroundColor: colors.danger,
     paddingVertical: 20,
     borderRadius: 20,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    fontFamily: "Quicksand-Regular",
   },
   sosText: {
     color: "white",
@@ -524,7 +590,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#34495e",
+    backgroundColor: colors.surface,
     height: height * 0.5,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -533,7 +599,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   modalContentLarge: {
-    backgroundColor: "#2D3436",
+    backgroundColor: colors.dark,
     height: height * 0.7,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -551,10 +617,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
   },
-  modalScroll: { flex: 1 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12 },
-  closeButton: { alignSelf: "flex-end" },
-  stepContent: { alignItems: "center", gap: 20 },
+  modalScroll: {
+    flex: 1,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  closeButton: {
+    alignSelf: "flex-end",
+  },
+  stepContent: {
+    alignItems: "center",
+    gap: 20,
+  },
   stepTitle: {
     color: "white",
     fontSize: 24,
@@ -562,20 +639,20 @@ const styles = StyleSheet.create({
     fontFamily: "Quicksand-Regular",
   },
   stepSubText: {
-    color: "#B2BEC3",
+    color: colors.lightGray,
     fontSize: 18,
     textAlign: "center",
     fontFamily: "Quicksand-Regular",
   },
   nextButton: {
-    backgroundColor: "#55E6C1",
+    backgroundColor: colors.primary,
     width: "100%",
     paddingVertical: 18,
     borderRadius: 15,
     alignItems: "center",
   },
   nextButtonText: {
-    color: "#2D3436",
+    color: colors.dark,
     fontSize: 18,
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
@@ -584,7 +661,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#34495e",
+    backgroundColor: colors.surface,
     padding: 20,
     borderRadius: 15,
     marginBottom: 12,
@@ -595,8 +672,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "Quicksand-Regular",
   },
-  cardSub: { color: "#B2BEC3", fontSize: 14, marginTop: 4 },
-  cardCallButton: { padding: 12, backgroundColor: "#2d3e50", borderRadius: 12 },
+  cardSub: {
+    color: colors.lightGray,
+    fontSize: 14,
+    marginTop: 4,
+  },
+  cardCallButton: {
+    padding: 12,
+    backgroundColor: "#2d3e50",
+    borderRadius: 12,
+  },
   moodCheckButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -606,7 +691,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   moodCheckText: {
-    color: "#fab1a0",
+    color: colors.secondary,
     fontSize: 16,
     fontFamily: "Quicksand-Bold",
     textDecorationLine: "underline",

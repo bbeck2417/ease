@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { ArrowLeft, CheckCircle } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { initDB } from "../utils/db";
 
@@ -15,6 +16,7 @@ const moods = [
 ];
 
 const MoodScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -38,7 +40,7 @@ const MoodScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Pressable
           onPress={() => navigation.goBack()}
@@ -49,7 +51,12 @@ const MoodScreen = () => {
         <Text style={styles.headerTitle}>Daily Check-in</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + 20 },
+        ]}
+      >
         <Text style={styles.question}>How are you feeling right now?</Text>
 
         <View style={styles.moodGrid}>
@@ -83,7 +90,7 @@ const MoodScreen = () => {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

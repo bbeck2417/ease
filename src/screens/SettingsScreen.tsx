@@ -11,13 +11,14 @@ import {
   Linking,
   Keyboard,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Phone, X, UserPlus, Quote, ArrowLeft } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { initDB } from "../utils/db";
 import { useNavigation } from "@react-navigation/native";
 
 const SettingsScreen = () => {
+  const insets = useSafeAreaInsets();
   const [contacts, setContacts] = useState<
     { id: number; name: string; phone: string }[]
   >([]);
@@ -94,8 +95,8 @@ const SettingsScreen = () => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <View style={{ flex: 1, backgroundColor: "#2D3436" }}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Pressable onPress={() => navigation.goBack()}>
           <ArrowLeft color="#55E6C1" size={28} />
         </Pressable>
@@ -186,7 +187,7 @@ const SettingsScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -7,6 +7,7 @@ import {
   Quicksand_400Regular,
   Quicksand_700Bold,
 } from "@expo-google-fonts/quicksand";
+import { colors } from "./src/theme/colors";
 
 import StruggleScreen from "./src/screens/StruggleScreen";
 import ResourceScreen from "./src/screens/ResourceScreen";
