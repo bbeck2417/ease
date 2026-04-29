@@ -10,15 +10,15 @@ import {
   Platform,
   Linking,
   Keyboard,
+  SafeAreaView, // <--- Moved here to core React Native
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Removed the react-native-safe-area-context import
 import { Phone, X, UserPlus, Quote, ArrowLeft } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { initDB } from "../utils/db";
 import { useNavigation } from "@react-navigation/native";
 
 const SettingsScreen = () => {
-  const insets = useSafeAreaInsets();
   const [contacts, setContacts] = useState<
     { id: number; name: string; phone: string }[]
   >([]);
@@ -55,7 +55,7 @@ const SettingsScreen = () => {
 
       setNewName("");
       setNewPhone("");
-      await loadData(); // This now works because both tables exist!
+      await loadData();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Keyboard.dismiss();
     } catch (error) {
@@ -74,15 +74,13 @@ const SettingsScreen = () => {
 
       setNewMantra("");
       await loadData();
-
-      // Dismiss the keyboard here too
       Keyboard.dismiss();
-
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error("Failed to save mantra:", error);
     }
   };
+
   const deleteItem = async (table: string, id: number) => {
     const db = await initDB();
     await db.runAsync(`DELETE FROM ${table} WHERE id = ?`, [id]);
@@ -95,9 +93,12 @@ const SettingsScreen = () => {
   }, []);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} // <--- Added for easier tapping
+        >
           <ArrowLeft color="#55E6C1" size={28} />
         </Pressable>
         <Text style={styles.title}>Settings</Text>
@@ -132,7 +133,6 @@ const SettingsScreen = () => {
                 keyboardType="phone-pad"
                 value={newPhone}
                 onChangeText={setNewPhone}
-                // Forces the keyboard's "Done" button to trigger the add logic
                 returnKeyType="done"
                 onSubmitEditing={addContact}
               />
@@ -146,7 +146,10 @@ const SettingsScreen = () => {
                   <Text style={styles.cardMain}>{c.name}</Text>
                   <Text style={styles.cardSub}>{c.phone}</Text>
                 </View>
-                <Pressable onPress={() => deleteItem("contacts", c.id)}>
+                <Pressable
+                  onPress={() => deleteItem("contacts", c.id)}
+                  hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                >
                   <X color="#D63031" size={20} />
                 </Pressable>
               </View>
@@ -164,7 +167,6 @@ const SettingsScreen = () => {
                 value={newMantra}
                 onChangeText={setNewMantra}
               />
-              {/* Change backgroundColor to Seafoam Green (#55E6C1) to fix the 'greyed out' look */}
               <Pressable
                 style={[styles.addButton, { backgroundColor: "#55E6C1" }]}
                 onPress={addMantra}
@@ -175,11 +177,13 @@ const SettingsScreen = () => {
               </Pressable>
             </View>
 
-            {/* List of Mantras will now appear here */}
             {mantras.map((m) => (
               <View key={m.id} style={styles.card}>
                 <Text style={[styles.cardMain, { flex: 1 }]}>{m.text}</Text>
-                <Pressable onPress={() => deleteItem("mantras", m.id)}>
+                <Pressable
+                  onPress={() => deleteItem("mantras", m.id)}
+                  hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                >
                   <X color="#D63031" size={20} />
                 </Pressable>
               </View>
@@ -187,7 +191,7 @@ const SettingsScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 };
 
