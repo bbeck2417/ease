@@ -62,6 +62,8 @@ const StruggleScreen = () => {
     { id: number; name: string; phone: string }[]
   >([]);
   const [mantras, setMantras] = useState<{ id: number; text: string }[]>([]);
+
+  // NEW: State to track which mantra is currently displayed
   const [activeMantraIndex, setActiveMantraIndex] = useState(0);
 
   // Cleanup timer if component unmounts while breathing
@@ -97,6 +99,7 @@ const StruggleScreen = () => {
     }
   }, [isFocused]);
 
+  // NEW: Effect to handle cycling the mantras while breathing
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
 
@@ -263,10 +266,11 @@ const StruggleScreen = () => {
           { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10 },
         ]}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={!isBreathing} // Lock scroll while breathing
+        scrollEnabled={!isBreathing}
       >
         <View style={styles.header}>
           <Text style={styles.title}>Ease</Text>
+          {/* UPDATED: Subtitle now alternates mantras when breathing */}
           <Text style={styles.subtitle}>
             {!isBreathing
               ? "Breathe with the circle"
@@ -278,7 +282,8 @@ const StruggleScreen = () => {
 
         <Pressable
           style={styles.bubbleContainer}
-          onPress={toggleBreathing} // Changed to Tap Toggle
+          onPress={toggleBreathing}
+          delayPressIn={0}
         >
           <Animated.View
             style={[
@@ -287,10 +292,12 @@ const StruggleScreen = () => {
             ]}
             pointerEvents="none"
           >
-            <Wind color={colors.primary} size={40} />
+            <Wind
+              color={isBreathing ? "white" : colors.primary}
+              size={isBreathing ? 60 : 40}
+            />
           </Animated.View>
           <Text style={styles.instructionText}>
-            {/* Updated Instruction Text */}
             {isBreathing ? "Tap to stop" : "Tap to breathe"}
           </Text>
         </Pressable>
@@ -607,6 +614,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Quicksand-Regular",
     marginTop: 4,
+    // UPDATED: Added text alignment and padding in case the mantra is long
+    textAlign: "center",
+    paddingHorizontal: 20,
   },
   bubbleContainer: {
     flex: 1,
@@ -622,6 +632,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(85, 230, 193, 0.2)",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
   instructionText: {
     color: colors.primary,
