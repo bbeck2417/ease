@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react"; // 1. Added useRef
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { Phone, Navigation, ArrowLeft } from "lucide-react-native";
 import { fetchNearbyResources, Resource } from "../data/resources";
 
 const { height } = Dimensions.get("window");
+
 const CATEGORIES = [
   "Crisis Centers",
   "Emergency Shelters",
@@ -30,9 +31,7 @@ const CATEGORIES = [
 
 const ResourceScreen = () => {
   const navigation = useNavigation();
-  const mapRef = useRef<MapView>(null);
-  const flatListRef = useRef<FlatList>(null); // Added for list focus
-  const markerRefs = useRef<{ [key: string]: any }>({}); // For opening bubbles
+  const mapRef = useRef<MapView>(null); // 2. Created the Map Reference
 
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null,
@@ -42,7 +41,7 @@ const ResourceScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>(
     CATEGORIES[0],
   );
-  const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
+  const [activeResourceId, setActiveResourceId] = useState<string | null>(null); // 3. State to track the highlighted card
 
   useEffect(() => {
     (async () => {
@@ -69,44 +68,26 @@ const ResourceScreen = () => {
     loadData();
   }, [location, selectedCategory]);
 
-  // Unified function to handle selection from Map OR List
-  const focusOnLocation = (item: Resource, fromMap: boolean = false) => {
+  // 4. Function to move the map to a specific resource
+  const focusOnLocation = (item: Resource) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveResourceId(item.id);
+    setActiveResourceId(item.id); // Highlight the card UI
 
-    // 1. Move the Map
     mapRef.current?.animateToRegion(
       {
         latitude: item.latitude,
         longitude: item.longitude,
-        latitudeDelta: 0.01,
+        latitudeDelta: 0.01, // Zoom in closer when focusing
         longitudeDelta: 0.01,
       },
-      800,
-    );
-
-    // 2. Open Info Bubble
-    setTimeout(() => {
-      markerRefs.current[item.id]?.showCallout();
-    }, 900);
-
-    // 3. Scroll List to card (if tapped from Map)
-    if (fromMap) {
-      const index = resources.findIndex((r) => r.id === item.id);
-      if (index !== -1) {
-        flatListRef.current?.scrollToIndex({
-          index,
-          animated: true,
-          viewPosition: 0.5, // Centers the selected card
-        });
-      }
-    }
+      1000,
+    ); // 1000ms animation duration
   };
 
   const handleCategorySelect = (category: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedCategory(category);
-    setActiveResourceId(null);
+    setActiveResourceId(null); // Reset focus when switching categories
   };
 
   const openNavigation = (item: Resource) => {
@@ -120,9 +101,13 @@ const ResourceScreen = () => {
   };
 
   const renderItem = ({ item }: { item: Resource }) => (
+    // 5. Wrap the whole card in a Pressable to trigger the focus
     <Pressable
       onPress={() => focusOnLocation(item)}
-      style={[styles.card, activeResourceId === item.id && styles.activeCard]}
+      style={[
+        styles.card,
+        activeResourceId === item.id && styles.activeCard, // Apply highlight style
+      ]}
     >
       <Text style={styles.resourceName}>{item.name}</Text>
       <Text style={styles.address}>{item.address}</Text>
@@ -143,6 +128,7 @@ const ResourceScreen = () => {
           <Phone color="white" size={20} />
           <Text style={styles.buttonText}>Call</Text>
         </Pressable>
+
         <Pressable style={styles.goButton} onPress={() => openNavigation(item)}>
           <Navigation color="#2D3436" size={20} />
           <Text style={[styles.buttonText, { color: "#2D3436" }]}>Go</Text>
@@ -155,7 +141,10 @@ const ResourceScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.goBack();
+          }}
           style={styles.backButton}
         >
           <ArrowLeft color="#55E6C1" size={28} />
@@ -194,10 +183,11 @@ const ResourceScreen = () => {
       <View style={styles.mapContainer}>
         {location ? (
           <MapView
-            ref={mapRef}
+            ref={mapRef} // 6. Attached the ref to the MapView
             style={styles.map}
             provider={PROVIDER_GOOGLE}
             initialRegion={{
+              // Changed from 'region' to 'initialRegion' so manual animations work smoothly
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
               latitudeDelta: 0.1,
@@ -207,19 +197,16 @@ const ResourceScreen = () => {
           >
             {resources.map((resource) => (
               <Marker
-                // 🟢 KEY HACK: Appending active state to key forces marker update
-                key={`${resource.id}-${activeResourceId === resource.id ? "active" : "inactive"}`}
-                ref={(el) => {
-                  markerRefs.current[resource.id] = el;
-                }}
+                key={resource.id}
                 coordinate={{
                   latitude: resource.latitude,
                   longitude: resource.longitude,
                 }}
-                onPress={() => focusOnLocation(resource, true)}
+                title={resource.name}
+                description={resource.address}
                 pinColor={
                   activeResourceId === resource.id ? "#FF9F43" : "#55E6C1"
-                } // Fixed hex typo
+                } // Highlight marker if selected
               >
                 <Callout tooltip>
                   <View style={styles.calloutBox}>
@@ -247,19 +234,11 @@ const ResourceScreen = () => {
           />
         ) : (
           <FlatList
-            ref={flatListRef}
             data={resources}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 40 }}
-            onScrollToIndexFailed={(info) => {
-              // Safety fallback for list scrolling
-              flatListRef.current?.scrollToOffset({
-                offset: info.averageItemLength * info.index,
-                animated: true,
-              });
-            }}
             ListEmptyComponent={
               <Text style={styles.emptyText}>
                 No {selectedCategory.toLowerCase()} found.
@@ -272,7 +251,6 @@ const ResourceScreen = () => {
   );
 };
 
-// ... keep your existing styles block
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#2D3436" },
   header: {
@@ -335,7 +313,7 @@ const styles = StyleSheet.create({
     fontFamily: "Quicksand-Bold",
   },
   listSection: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
-  title: { color: "white", fontSize: 26, fontWeight: "bold", marginBottom: 20 },
+  title: { color: "white", fontSize: 22, fontWeight: "bold", marginBottom: 15 },
   card: {
     backgroundColor: "#34495e",
     borderRadius: 20,
@@ -345,7 +323,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "transparent",
   },
-  activeCard: { borderColor: "#55E6C1" },
+  activeCard: { borderColor: "#55E6C1" }, // Border color for highlighted item
   resourceName: { color: "white", fontSize: 18, fontWeight: "bold" },
   address: {
     color: "#B2BEC3",
