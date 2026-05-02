@@ -1,3 +1,4 @@
+
 export interface Resource {
   id: string; // Changed to string for Google Place IDs
   name: string;
@@ -7,6 +8,7 @@ export interface Resource {
   type: string;
   phone: string;
 }
+
 
 // ⚠️ Insert your Google Places API Key here (from Google Cloud Console)
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;

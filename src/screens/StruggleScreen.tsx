@@ -347,7 +347,7 @@ const StruggleScreen = () => {
             }}
           >
             <MapPin color={colors.primary} size={24} />
-            <Text style={styles.buttonTextDark}>Local Safe Spaces</Text>
+            <Text style={styles.buttonTextDark}>Find Local Resources</Text>
           </Pressable>
 
           <Pressable

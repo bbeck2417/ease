@@ -205,30 +205,43 @@ const ResourceScreen = () => {
             }}
             showsUserLocation={true}
           >
-            {resources.map((resource) => (
-              <Marker
-                // 🟢 KEY HACK: Appending active state to key forces marker update
-                key={`${resource.id}-${activeResourceId === resource.id ? "active" : "inactive"}`}
-                ref={(el) => {
-                  markerRefs.current[resource.id] = el;
-                }}
-                coordinate={{
-                  latitude: resource.latitude,
-                  longitude: resource.longitude,
-                }}
-                onPress={() => focusOnLocation(resource, true)}
-                pinColor={
-                  activeResourceId === resource.id ? "#FF9F43" : "#55E6C1"
-                } // Fixed hex typo
-              >
-                <Callout tooltip>
-                  <View style={styles.calloutBox}>
-                    <Text style={styles.calloutTitle}>{resource.name}</Text>
-                    <Text style={styles.calloutDesc}>{resource.address}</Text>
+            {resources.map((resource) => {
+              const isActive = activeResourceId === resource.id;
+
+              return (
+                <Marker
+                  // 🟢 Use a stable key now; the custom View handles re-renders better than pinColor
+                  key={resource.id}
+                  ref={(el) => {
+                    markerRefs.current[resource.id] = el;
+                  }}
+                  coordinate={{
+                    latitude: resource.latitude,
+                    longitude: resource.longitude,
+                  }}
+                  onPress={() => focusOnLocation(resource, true)}
+                  // 🟢 Optimization: Prevents flickering on iOS
+                  tracksViewChanges={Platform.OS === "ios" ? false : true}
+                >
+                  {/* 🟢 CUSTOM PIN COMPONENT */}
+                  <View
+                    style={[
+                      styles.customPin,
+                      { backgroundColor: isActive ? "#FF9F43" : "#55E6C1" },
+                    ]}
+                  >
+                    <View style={styles.pinInnerCore} />
                   </View>
-                </Callout>
-              </Marker>
-            ))}
+
+                  <Callout tooltip>
+                    <View style={styles.calloutBox}>
+                      <Text style={styles.calloutTitle}>{resource.name}</Text>
+                      <Text style={styles.calloutDesc}>{resource.address}</Text>
+                    </View>
+                  </Callout>
+                </Marker>
+              );
+            })}
           </MapView>
         ) : (
           <View style={[styles.map, styles.loadingCenter]}>
@@ -386,6 +399,27 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "Quicksand-Regular",
     marginTop: 20,
+  },
+  customPin: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 3,
+    borderColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    // Shadow for depth on iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5, // Shadow for Android
+  },
+  pinInnerCore: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "white",
   },
 });
 
