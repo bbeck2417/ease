@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   secondaryButton: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 20,
@@ -664,20 +664,20 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontSize: 16,
-    fontWeight: "bold",
-    fontFamily: "Quicksand-Bold",
+    fontWeight: "400",
+    fontFamily: "Quicksand",
   },
   buttonTextDark: {
     color: colors.primary,
     fontSize: 18,
-    fontWeight: "bold",
-    fontFamily: "Quicksand-Bold",
+    fontWeight: "400",
+    fontFamily: "Quicksand",
   },
   sosText: {
     color: "white",
     fontSize: 20,
-    fontWeight: "bold",
-    fontFamily: "Quicksand-Bold",
+    fontWeight: "500",
+    fontFamily: "Quicksand",
   },
   modalOverlay: {
     flex: 1,

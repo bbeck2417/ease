@@ -10,12 +10,20 @@ import {
   Platform,
   Linking,
   Keyboard,
+  Modal,
+  FlatList,
+  ActivityIndicator,
+  Dimensions,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Phone, X, UserPlus, Quote, ArrowLeft } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import * as Contacts from "expo-contacts";
 import { initDB } from "../utils/db";
 import { useNavigation } from "@react-navigation/native";
+
+const { height } = Dimensions.get("window");
 
 const SettingsScreen = () => {
   const insets = useSafeAreaInsets();
@@ -26,6 +34,9 @@ const SettingsScreen = () => {
   const [newPhone, setNewPhone] = useState("");
   const [mantras, setMantras] = useState<{ id: number; text: string }[]>([]);
   const [newMantra, setNewMantra] = useState("");
+  const [isContactsModalVisible, setIsContactsModalVisible] = useState(false);
+  const [phoneContacts, setPhoneContacts] = useState<Contacts.Contact[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const phoneInputRef = useRef<TextInput>(null);
   const navigation = useNavigation();
 
@@ -63,6 +74,50 @@ const SettingsScreen = () => {
     }
   };
 
+  const importContactFromPhone = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsLoadingContacts(true);
+
+    const { status } = await Contacts.requestPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Required",
+        "To import contacts, you need to allow access to your phonebook in your device settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+        ],
+      );
+      setIsLoadingContacts(false);
+      return;
+    }
+
+    const { data } = await Contacts.getContactsAsync({
+      fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+    });
+
+    if (data.length > 0) {
+      const contactsWithPhones = data.filter(
+        (c) => c.phoneNumbers && c.phoneNumbers.length > 0,
+      );
+      setPhoneContacts(contactsWithPhones);
+      setIsContactsModalVisible(true);
+    } else {
+      // Optionally, show an alert that no contacts were found.
+      console.log("No contacts with phone numbers found.");
+    }
+    setIsLoadingContacts(false);
+  };
+
+  const handleContactSelect = (contact: Contacts.Contact) => {
+    setNewName(contact.name);
+    if (contact.phoneNumbers && contact.phoneNumbers[0]?.number) {
+      setNewPhone(contact.phoneNumbers[0].number);
+    }
+    setIsContactsModalVisible(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
   const addMantra = async () => {
     if (!newMantra.trim()) return;
 
@@ -93,6 +148,31 @@ const SettingsScreen = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  const formatPhoneNumber = (text: string) => {
+    // 1. Remove all non-numeric characters
+    const cleaned = text.replace(/\D/g, "");
+
+    // 2. Apply formatting (Example: 555-555-5555)
+    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+
+    if (match) {
+      const part1 = match[1];
+      const part2 = match[2];
+      const part3 = match[3];
+
+      if (part3) return `${part1}-${part2}-${part3}`;
+      if (part2) return `${part1}-${part2}`;
+      return part1;
+    }
+
+    return cleaned;
+  };
+
+  const handlePhoneNumberChangeText = (text: string) => {
+    const formatted = formatPhoneNumber(text);
+    setNewPhone(formatted);
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -127,17 +207,38 @@ const SettingsScreen = () => {
               <TextInput
                 ref={phoneInputRef}
                 style={styles.input}
-                placeholder="Phone"
+                placeholder="555-555-555"
                 placeholderTextColor="#636e72"
                 keyboardType="phone-pad"
+                inputMode="tel"
                 value={newPhone}
-                onChangeText={setNewPhone}
+                maxLength={12}
+                onChangeText={handlePhoneNumberChangeText}
                 // Forces the keyboard's "Done" button to trigger the add logic
                 returnKeyType="done"
                 onSubmitEditing={addContact}
               />
-              <Pressable style={styles.addButton} onPress={addContact}>
+              <Pressable
+                style={[
+                  styles.addButton,
+                  (!newName.trim() || !newPhone.trim()) &&
+                    styles.disabledButton,
+                ]}
+                onPress={addContact}
+                disabled={!newName.trim() || !newPhone.trim()}
+              >
                 <Text style={styles.addText}>Add Contact</Text>
+              </Pressable>
+              <Pressable
+                style={styles.importButton}
+                onPress={importContactFromPhone}
+              >
+                {isLoadingContacts ? (
+                  <ActivityIndicator color="#55E6C1" />
+                ) : (
+                  <UserPlus color="#55E6C1" size={20} />
+                )}
+                <Text style={styles.importButtonText}>Import From Phone</Text>
               </Pressable>
             </View>
             {contacts.map((c) => (
@@ -187,6 +288,49 @@ const SettingsScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Contacts Import Modal */}
+      <Modal
+        visible={isContactsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsContactsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Import Contact</Text>
+              <Pressable onPress={() => setIsContactsModalVisible(false)}>
+                <X color="#B2BEC3" size={28} />
+              </Pressable>
+            </View>
+            <FlatList
+              data={phoneContacts}
+              keyExtractor={(item, index) => item.id ?? index.toString()}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={styles.card}
+                  onPress={() => handleContactSelect(item)}
+                >
+                  <View>
+                    <Text style={styles.cardMain}>{item.name}</Text>
+                    {item.phoneNumbers && item.phoneNumbers[0]?.number && (
+                      <Text style={styles.cardSub}>
+                        {item.phoneNumbers[0].number}
+                      </Text>
+                    )}
+                  </View>
+                </Pressable>
+              )}
+              ListEmptyComponent={
+                <Text style={styles.emptyListText}>
+                  No contacts with phone numbers found on your device.
+                </Text>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -200,7 +344,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
   },
-  scrollContent: { padding: 20 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
   section: { marginBottom: 30 },
   sectionTitle: {
     color: "#55E6C1",
@@ -222,12 +366,31 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     alignItems: "center",
-    fontSize: 14,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  importButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#55E6C1",
+    padding: 12,
+    borderRadius: 10,
   },
   addText: {
+    color: "#2D3436",
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
     fontSize: 18,
+  },
+  importButtonText: {
+    color: "#55E6C1",
+    fontWeight: "bold",
+    fontFamily: "Quicksand-Regular",
+    fontSize: 16,
   },
   card: {
     flexDirection: "row",
@@ -245,6 +408,37 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   cardSub: { color: "#B2BEC3", fontSize: 16, fontFamily: "Quicksand-Regular" },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "flex-end",
+  },
+  modalContainer: {
+    backgroundColor: "#2D3436",
+    height: height * 0.7,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    color: "white",
+    fontSize: 22,
+    fontWeight: "bold",
+    fontFamily: "Quicksand-Regular",
+  },
+  emptyListText: {
+    color: "#B2BEC3",
+    textAlign: "center",
+    marginTop: 40,
+    fontFamily: "Quicksand-Regular",
+  },
 });
 
 export default SettingsScreen;
