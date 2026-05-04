@@ -14,12 +14,17 @@
     },
     "ios": {
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Ease uses your location to find the nearest mental health clinics and crisis centers."
+        "NSLocationWhenInUseUsageDescription": "Ease uses your location to find the nearest mental health clinics and crisis centers.",
+        "NSCameraUsageDescription": "Allow Ease to access your camera to measure your heart rate."
       },
       "supportsTablet": true
     },
     "android": {
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2D3436"
