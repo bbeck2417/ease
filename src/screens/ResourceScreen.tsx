@@ -17,6 +17,7 @@ import * as Location from "expo-location";
 import * as Haptics from "expo-haptics";
 import { Phone, Navigation, ArrowLeft } from "lucide-react-native";
 import { fetchNearbyResources, Resource } from "../data/resources";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { height } = Dimensions.get("window");
 const CATEGORIES = [
@@ -43,6 +44,7 @@ const ResourceScreen = () => {
     CATEGORIES[0],
   );
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     (async () => {
@@ -152,14 +154,15 @@ const ResourceScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <ArrowLeft color="#55E6C1" size={28} />
-        </Pressable>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+      >
+        <ArrowLeft color="#55E6C1" size={24} />
+      </Pressable>
+      <View style={styles.headerTitleContainer}>
         <Text style={styles.headerTitle}>Resources</Text>
       </View>
 
@@ -291,7 +294,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
     paddingHorizontal: 20,
     paddingBottom: 15,
     backgroundColor: "#2D3436",
@@ -420,6 +422,22 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: "white",
+  },
+  headerLeftButton: {
+    position: "absolute",
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
+  },
+  headerTitleContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 18, // Pushes title down to align nicely with the absolute button
+    marginBottom: 20,
   },
 });
 

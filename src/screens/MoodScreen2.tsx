@@ -35,7 +35,6 @@ import {
   Quote,
   Users,
   BookOpen,
-  Heart,
 } from "lucide-react-native";
 import { colors } from "../theme/colors";
 import { initDB } from "../utils/db";
@@ -249,13 +248,6 @@ const StruggleScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Pressable
-        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
-        onPress={() => navigation.navigate("Measure")}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-      >
-        <Heart color={colors.primary} size={24} />
-      </Pressable>
       <Pressable
         style={[styles.headerRightButton, { top: insets.top + 10, right: 16 }]}
         onPress={() => navigation.navigate("Settings")}

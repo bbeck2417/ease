@@ -12,6 +12,8 @@ import StruggleScreen from "./src/screens/StruggleScreen";
 import ResourceScreen from "./src/screens/ResourceScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import MoodScreen from "./src/screens/MoodScreen";
+import HistoryScreen from "./src/screens/HistoryScreen";
+import MeasureScreen from "./src/screens/MeasureScreen";
 import { colors } from "./src/theme/colors";
 
 export type RootStackParamList = {
@@ -19,6 +21,8 @@ export type RootStackParamList = {
   Resources: undefined;
   Settings: undefined;
   Mood: undefined;
+  History: undefined;
+  Measure: undefined
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -58,6 +62,16 @@ export default function App() {
           <Stack.Screen name="Resources" component={ResourceScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="Mood" component={MoodScreen} />
+          <Stack.Screen
+            name="Measure"
+            component={MeasureScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="History"
+            component={HistoryScreen}
+            options={{ headerShown: false }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

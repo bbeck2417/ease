@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,10 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { ArrowLeft, CheckCircle } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
@@ -37,6 +40,8 @@ const MoodScreen = () => {
   // New state for the mood history log
   const [logs, setLogs] = useState<MoodEntry[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const insets = useSafeAreaInsets();
 
   // Fetch the latest 14 entries from the database
   const fetchMoods = async () => {
@@ -56,6 +61,13 @@ const MoodScreen = () => {
   // Load history when the screen opens
   useEffect(() => {
     fetchMoods();
+    // Cleanup function: If the user manually leaves the screen before the timeout finishes,
+    // this clears the timeout to prevent a memory leak and state update warnings.
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, []);
 
   const saveMood = async (emoji: string, label: string) => {
@@ -64,18 +76,29 @@ const MoodScreen = () => {
 
     try {
       const db = await initDB();
-      await db.runAsync("INSERT INTO moods (emoji, label) VALUES (?, ?)", [
-        emoji,
-        label,
-      ]);
+      const result = await db.runAsync(
+        "INSERT INTO moods (emoji, label) VALUES (?, ?)",
+        [emoji, label],
+      );
 
       setSaved(true);
 
-      // Immediately refresh the history list so the new mood appears!
-      await fetchMoods();
+      // Optimistic UI Update: Instead of fetching the entire history again,
+      // construct the new entry and unshift it to the local state instantly.
+      const newEntry: MoodEntry = {
+        id: result.lastInsertRowId,
+        emoji,
+        label,
+        // Mimicking SQLite's CURRENT_TIMESTAMP format for the optimistic display
+        timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
+      };
 
-      // Give the user a moment to see the success state
-      setTimeout(() => navigation.goBack(), 2500);
+      setLogs((prevLogs) => [newEntry, ...prevLogs].slice(0, 14));
+
+      // Give the user a moment to see the success state before navigating
+      timeoutRef.current = setTimeout(() => {
+        navigation.goBack();
+      }, 2500);
     } catch (error) {
       console.error("Failed to save mood:", error);
     }
@@ -84,7 +107,9 @@ const MoodScreen = () => {
   // Safely format the SQLite timestamp
   const formatDate = (dateString: string) => {
     if (!dateString) return "Unknown Date";
-    const date = new Date(dateString + "Z"); // Append Z to ensure UTC parsing
+    // Convert '2026-05-04 13:49:02' to '2026-05-04T13:49:02Z' for strict JS engines
+    const safeDateString = dateString.replace(" ", "T") + "Z";
+    const date = new Date(safeDateString);
     return date.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
@@ -93,18 +118,19 @@ const MoodScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        >
-          <ArrowLeft color="#55E6C1" size={28} />
-        </Pressable>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+        onPress={() => navigation.goBack()}
+        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+      >
+        <ArrowLeft color="#55E6C1" size={24} />
+      </Pressable>
+      <View style={styles.headerTitleContainer}>
         <Text style={styles.headerTitle}>Daily Check-in</Text>
       </View>
-
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -115,8 +141,11 @@ const MoodScreen = () => {
           {moods.map((mood) => (
             <Pressable
               key={mood.label}
+              accessibilityRole="button"
+              accessibilityLabel={`Log mood as ${mood.label}`}
               style={[
                 styles.moodButton,
+                selectedMood === null && { borderColor: "#55E6C1" }, // Default state handled here
                 selectedMood === mood.label && {
                   borderColor: mood.color,
                   backgroundColor: "#34495e",
@@ -178,7 +207,7 @@ const MoodScreen = () => {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -218,7 +247,14 @@ const styles = StyleSheet.create({
   },
   emoji: { fontSize: 40, marginBottom: 10 },
   moodLabel: { fontWeight: "bold", fontFamily: "Quicksand-Bold" },
-  successContainer: { marginTop: 40, alignItems: "center", gap: 10 },
+  successContainer: {
+    marginTop: 40,
+    alignItems: "center",
+    gap: 10,
+    padding: 20,
+    backgroundColor: "#34495E",
+    borderRadius: 16,
+  },
   successText: {
     color: "#B2BEC3",
     fontSize: 16,
@@ -259,6 +295,7 @@ const styles = StyleSheet.create({
   logsContainer: {
     width: "100%",
     gap: 12, // Provides spacing between mapped items
+    padding: 20,
   },
   logCard: {
     flexDirection: "row",
@@ -267,6 +304,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     width: "100%",
+    justifyContent: "space-between",
   },
   logEmojiContainer: {
     width: 50,
@@ -293,6 +331,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Quicksand-Regular",
     marginTop: 4,
+  },
+  headerLeftButton: {
+    position: "absolute",
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
+  },
+  headerTitleContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 18, // Pushes title down to align nicely with the absolute button
+    marginBottom: 20,
   },
 });
 

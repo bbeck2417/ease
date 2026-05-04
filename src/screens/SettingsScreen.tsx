@@ -61,7 +61,7 @@ const SettingsScreen = () => {
       const db = await initDB();
       await db.runAsync("INSERT INTO contacts (name, phone) VALUES (?, ?)", [
         newName.trim(),
-        newPhone.trim(),
+        newPhone,
       ]);
 
       setNewName("");
@@ -71,6 +71,7 @@ const SettingsScreen = () => {
       Keyboard.dismiss();
     } catch (error) {
       console.error("Failed to save contact:", error);
+      Alert.alert("Error", "Failed to add contact. Please try again.");
     }
   };
 
@@ -92,20 +93,28 @@ const SettingsScreen = () => {
       return;
     }
 
-    const { data } = await Contacts.getContactsAsync({
-      fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-    });
+    try {
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+      });
 
-    if (data.length > 0) {
-      const contactsWithPhones = data.filter(
-        (c) => c.phoneNumbers && c.phoneNumbers.length > 0,
-      );
-      setPhoneContacts(contactsWithPhones);
-      setIsContactsModalVisible(true);
-    } else {
-      // Optionally, show an alert that no contacts were found.
-      console.log("No contacts with phone numbers found.");
+      if (data.length > 0) {
+        const contactsWithPhones = data.filter(
+          (c) => c.phoneNumbers && c.phoneNumbers.length > 0,
+        );
+        setPhoneContacts(contactsWithPhones);
+        setIsContactsModalVisible(true);
+      } else {
+        Alert.alert(
+          "No Contacts",
+          "No contacts with phone numbers found on your device.",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to fetch contacts:", error);
+      Alert.alert("Error", "Failed to fetch contacts. Please try again.");
     }
+
     setIsLoadingContacts(false);
   };
 
@@ -150,22 +159,9 @@ const SettingsScreen = () => {
   }, []);
 
   const formatPhoneNumber = (text: string) => {
-    // 1. Remove all non-numeric characters
     const cleaned = text.replace(/\D/g, "");
-
-    // 2. Apply formatting (Example: 555-555-5555)
-    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-    if (match) {
-      const part1 = match[1];
-      const part2 = match[2];
-      const part3 = match[3];
-
-      if (part3) return `${part1}-${part2}-${part3}`;
-      if (part2) return `${part1}-${part2}`;
-      return part1;
-    }
-
+    if (cleaned.length === 10)
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
     return cleaned;
   };
 
@@ -176,13 +172,16 @@ const SettingsScreen = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <ArrowLeft color="#55E6C1" size={28} />
-        </Pressable>
+      <Pressable
+        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
+        onPress={() => navigation.goBack()}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+      >
+        <ArrowLeft color="#55E6C1" size={24} />
+      </Pressable>
+      <View style={styles.headerTitleContainer}>
         <Text style={styles.title}>Settings</Text>
       </View>
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -385,12 +384,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
     fontSize: 18,
+    textAlign: "center",
   },
   importButtonText: {
     color: "#55E6C1",
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
     fontSize: 16,
+    textAlign: "center",
   },
   card: {
     flexDirection: "row",
@@ -406,8 +407,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
     fontSize: 18,
+    textAlign: "left",
   },
-  cardSub: { color: "#B2BEC3", fontSize: 16, fontFamily: "Quicksand-Regular" },
+  cardSub: {
+    color: "#B2BEC3",
+    fontSize: 16,
+    fontFamily: "Quicksand-Regular",
+    textAlign: "left",
+  },
   // Modal Styles
   modalOverlay: {
     flex: 1,
@@ -438,6 +445,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
     fontFamily: "Quicksand-Regular",
+  },
+  headerLeftButton: {
+    position: "absolute",
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
+  },
+  headerTitleContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 18, // Pushes title down to align nicely with the absolute button
+    marginBottom: 20,
   },
 });
 
