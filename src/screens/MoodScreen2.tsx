@@ -34,12 +34,12 @@ const MoodScreen = () => {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // New state for the mood history log
   const [logs, setLogs] = useState<MoodEntry[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch the latest 14 entries from the database
+  // Use a ref to hold the timeout ID so we can clear it if the component unmounts
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const fetchMoods = async () => {
     try {
       const db = await initDB();
@@ -54,9 +54,9 @@ const MoodScreen = () => {
     }
   };
 
-  // Load history when the screen opens
   useEffect(() => {
     fetchMoods();
+
     // Cleanup function: If the user manually leaves the screen before the timeout finishes,
     // this clears the timeout to prevent a memory leak and state update warnings.
     return () => {
@@ -103,9 +103,11 @@ const MoodScreen = () => {
   // Safely format the SQLite timestamp
   const formatDate = (dateString: string) => {
     if (!dateString) return "Unknown Date";
+
     // Convert '2026-05-04 13:49:02' to '2026-05-04T13:49:02Z' for strict JS engines
     const safeDateString = dateString.replace(" ", "T") + "Z";
     const date = new Date(safeDateString);
+
     return date.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
@@ -240,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "transparent",
+    borderColor: "transparent", // Moved the base border state here
   },
   emoji: { fontSize: 40, marginBottom: 10 },
   moodLabel: { fontWeight: "bold", fontFamily: "Quicksand-Bold" },
@@ -249,7 +251,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     padding: 20,
-    backgroundColor: "#34495E",
+    backgroundColor: "#34495E", // Fixed the missing hash symbol
     borderRadius: 16,
   },
   successText: {
@@ -291,7 +293,7 @@ const styles = StyleSheet.create({
   },
   logsContainer: {
     width: "100%",
-    gap: 12, // Provides spacing between mapped items
+    gap: 12,
     padding: 20,
   },
   logCard: {

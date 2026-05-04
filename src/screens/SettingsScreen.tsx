@@ -61,7 +61,7 @@ const SettingsScreen = () => {
       const db = await initDB();
       await db.runAsync("INSERT INTO contacts (name, phone) VALUES (?, ?)", [
         newName.trim(),
-        newPhone.trim(),
+        newPhone,
       ]);
 
       setNewName("");
@@ -71,6 +71,7 @@ const SettingsScreen = () => {
       Keyboard.dismiss();
     } catch (error) {
       console.error("Failed to save contact:", error);
+      Alert.alert("Error", "Failed to add contact. Please try again.");
     }
   };
 
@@ -92,20 +93,28 @@ const SettingsScreen = () => {
       return;
     }
 
-    const { data } = await Contacts.getContactsAsync({
-      fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-    });
+    try {
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+      });
 
-    if (data.length > 0) {
-      const contactsWithPhones = data.filter(
-        (c) => c.phoneNumbers && c.phoneNumbers.length > 0,
-      );
-      setPhoneContacts(contactsWithPhones);
-      setIsContactsModalVisible(true);
-    } else {
-      // Optionally, show an alert that no contacts were found.
-      console.log("No contacts with phone numbers found.");
+      if (data.length > 0) {
+        const contactsWithPhones = data.filter(
+          (c) => c.phoneNumbers && c.phoneNumbers.length > 0,
+        );
+        setPhoneContacts(contactsWithPhones);
+        setIsContactsModalVisible(true);
+      } else {
+        Alert.alert(
+          "No Contacts",
+          "No contacts with phone numbers found on your device.",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to fetch contacts:", error);
+      Alert.alert("Error", "Failed to fetch contacts. Please try again.");
     }
+
     setIsLoadingContacts(false);
   };
 
@@ -150,22 +159,9 @@ const SettingsScreen = () => {
   }, []);
 
   const formatPhoneNumber = (text: string) => {
-    // 1. Remove all non-numeric characters
     const cleaned = text.replace(/\D/g, "");
-
-    // 2. Apply formatting (Example: 555-555-5555)
-    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-    if (match) {
-      const part1 = match[1];
-      const part2 = match[2];
-      const part3 = match[3];
-
-      if (part3) return `${part1}-${part2}-${part3}`;
-      if (part2) return `${part1}-${part2}`;
-      return part1;
-    }
-
+    if (cleaned.length === 10)
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
     return cleaned;
   };
 
@@ -385,12 +381,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
     fontSize: 18,
+    textAlign: "center",
   },
   importButtonText: {
     color: "#55E6C1",
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
     fontSize: 16,
+    textAlign: "center",
   },
   card: {
     flexDirection: "row",
@@ -406,8 +404,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontFamily: "Quicksand-Regular",
     fontSize: 18,
+    textAlign: "left",
   },
-  cardSub: { color: "#B2BEC3", fontSize: 16, fontFamily: "Quicksand-Regular" },
+  cardSub: {
+    color: "#B2BEC3",
+    fontSize: 16,
+    fontFamily: "Quicksand-Regular",
+    textAlign: "left",
+  },
   // Modal Styles
   modalOverlay: {
     flex: 1,
