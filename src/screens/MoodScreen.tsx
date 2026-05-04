@@ -7,7 +7,10 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { ArrowLeft, CheckCircle } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
@@ -38,6 +41,7 @@ const MoodScreen = () => {
   const [logs, setLogs] = useState<MoodEntry[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const insets = useSafeAreaInsets();
 
   // Fetch the latest 14 entries from the database
   const fetchMoods = async () => {
@@ -114,20 +118,19 @@ const MoodScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        >
-          <ArrowLeft color="#55E6C1" size={28} />
-        </Pressable>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+        onPress={() => navigation.goBack()}
+        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+      >
+        <ArrowLeft color="#55E6C1" size={24} />
+      </Pressable>
+      <View style={styles.headerTitleContainer}>
         <Text style={styles.headerTitle}>Daily Check-in</Text>
       </View>
-
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -204,7 +207,7 @@ const MoodScreen = () => {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -328,6 +331,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Quicksand-Regular",
     marginTop: 4,
+  },
+  headerLeftButton: {
+    position: "absolute",
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
+  },
+  headerTitleContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 18, // Pushes title down to align nicely with the absolute button
+    marginBottom: 20,
   },
 });
 

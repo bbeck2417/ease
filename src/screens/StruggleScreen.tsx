@@ -17,7 +17,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { RootStackParamList } from "../../App";
+import { RootStackParamList } from "../../App"; // Ensure your App.tsx is updated with the missing screens!
 import * as Linking from "expo-linking";
 import * as Haptics from "expo-haptics";
 import {
@@ -35,6 +35,7 @@ import {
   Quote,
   Users,
   BookOpen,
+  Heart,
 } from "lucide-react-native";
 import { colors } from "../theme/colors";
 import { initDB } from "../utils/db";
@@ -48,10 +49,11 @@ const StruggleScreen = () => {
 
   const scaleValue = useRef(new Animated.Value(1)).current;
   const isBreathingRef = useRef(false);
-  const rampTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const insets = useSafeAreaInsets();
 
-  const mantrasRef = useRef<{ id: number; text: string }[]>([]);
+  // Trackers for animation-synced haptics
+  const lastScaleRef = useRef(1);
+  const lastHapticScaleRef = useRef(1);
 
   const [isBreathing, setIsBreathing] = useState(false);
   const [groundingModalVisible, setGroundingModalVisible] = useState(false);
@@ -63,13 +65,6 @@ const StruggleScreen = () => {
   >([]);
   const [mantras, setMantras] = useState<{ id: number; text: string }[]>([]);
   const [activeMantraIndex, setActiveMantraIndex] = useState(0);
-
-  // Cleanup timer if component unmounts while breathing
-  useEffect(() => {
-    return () => {
-      if (rampTimer.current) clearInterval(rampTimer.current);
-    };
-  }, []);
 
   const loadData = async () => {
     try {
@@ -85,7 +80,6 @@ const StruggleScreen = () => {
         "SELECT * FROM mantras",
       );
       setMantras(allMantras);
-      mantrasRef.current = allMantras;
     } catch (error) {
       console.error("Failed to load data:", error);
     }
@@ -97,6 +91,46 @@ const StruggleScreen = () => {
     }
   }, [isFocused]);
 
+  // --- NEW: Synced Haptic Listener ---
+  useEffect(() => {
+    const listenerId = scaleValue.addListener(({ value }) => {
+      if (!isBreathingRef.current) return;
+
+      const isHolding = value === lastScaleRef.current;
+      const isInhaling = value > lastScaleRef.current;
+      const isExhaling = value < lastScaleRef.current;
+
+      // Only trigger haptics if we are actively scaling (not holding)
+      if (!isHolding) {
+        // Trigger a thump every time the scale changes by 0.125
+        if (Math.abs(value - lastHapticScaleRef.current) >= 0.125) {
+          lastHapticScaleRef.current = value;
+
+          let style = Haptics.ImpactFeedbackStyle.Medium;
+
+          if (isInhaling) {
+            if (value < 1.33) style = Haptics.ImpactFeedbackStyle.Light;
+            else if (value < 1.66) style = Haptics.ImpactFeedbackStyle.Medium;
+            else style = Haptics.ImpactFeedbackStyle.Heavy;
+          } else if (isExhaling) {
+            if (value > 1.66) style = Haptics.ImpactFeedbackStyle.Heavy;
+            else if (value > 1.33) style = Haptics.ImpactFeedbackStyle.Medium;
+            else style = Haptics.ImpactFeedbackStyle.Light;
+          }
+
+          Haptics.impactAsync(style);
+        }
+      }
+
+      lastScaleRef.current = value;
+    });
+
+    return () => {
+      scaleValue.removeListener(listenerId);
+    };
+  }, [scaleValue]);
+
+  // Handle Mantra Cycling (Text drift is imperceptible compared to haptic drift, so setInterval is fine here)
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
 
@@ -105,19 +139,14 @@ const StruggleScreen = () => {
       interval = setInterval(() => {
         setActiveMantraIndex((prevIndex) => (prevIndex + 1) % mantras.length);
       }, 12000);
+    } else if (!isBreathing) {
+      setActiveMantraIndex(0);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [isBreathing, mantras.length]);
-
-  // NEW: Reset mantra index when user stops breathing
-  useEffect(() => {
-    if (!isBreathing) {
-      setActiveMantraIndex(0);
-    }
-  }, [isBreathing]);
 
   const groundingExercises = [
     {
@@ -158,6 +187,11 @@ const StruggleScreen = () => {
   const startBreathing = () => {
     isBreathingRef.current = true;
     setIsBreathing(true);
+
+    // Reset trackers for a clean start
+    lastScaleRef.current = 1;
+    lastHapticScaleRef.current = 1;
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     // Visual Animation (4s Inhale -> 2s Pause -> 4s Exhale -> 2s Pause)
@@ -187,52 +221,19 @@ const StruggleScreen = () => {
     Animated.loop(
       Animated.sequence([inhale, holdFull, exhale, holdEmpty]),
     ).start();
-
-    // Haptics Orchestration Loop
-    let timeElapsed = 0;
-    rampTimer.current = setInterval(() => {
-      const cycleTime = timeElapsed % 12000; // Total 12s cycle
-
-      if (cycleTime < 4000) {
-        // INHALE PHASE: Intensity ramps up
-        if (cycleTime < 1500) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        } else if (cycleTime < 3000) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        } else {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        }
-      } else if (cycleTime >= 6000 && cycleTime < 10000) {
-        // EXHALE PHASE: Intensity winds down
-        const exhaleTime = cycleTime - 6000;
-        if (exhaleTime < 1500) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        } else if (exhaleTime < 3000) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        } else {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-      }
-      // Times between 4000-6000 and 10000-12000 are the PAUSE phases (No haptics)
-
-      timeElapsed += 500;
-    }, 500); // Check and thump every half second
   };
 
   const stopBreathing = () => {
     isBreathingRef.current = false;
     setIsBreathing(false);
     scaleValue.stopAnimation();
+
     Animated.timing(scaleValue, {
       toValue: 1,
       duration: 1000,
       useNativeDriver: true,
     }).start();
 
-    if (rampTimer.current) {
-      clearInterval(rampTimer.current);
-      rampTimer.current = null;
-    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
@@ -248,6 +249,13 @@ const StruggleScreen = () => {
 
   return (
     <View style={styles.container}>
+      <Pressable
+        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
+        onPress={() => navigation.navigate("Measure")}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+      >
+        <Heart color={colors.primary} size={24} />
+      </Pressable>
       <Pressable
         style={[styles.headerRightButton, { top: insets.top + 10, right: 16 }]}
         onPress={() => navigation.navigate("Settings")}
@@ -276,10 +284,7 @@ const StruggleScreen = () => {
           </Text>
         </View>
 
-        <Pressable
-          style={styles.bubbleContainer}
-          onPress={toggleBreathing} // Changed to Tap Toggle
-        >
+        <Pressable style={styles.bubbleContainer} onPress={toggleBreathing}>
           <Animated.View
             style={[
               styles.breathingCircle,
@@ -290,7 +295,6 @@ const StruggleScreen = () => {
             <Wind color={colors.primary} size={40} />
           </Animated.View>
           <Text style={styles.instructionText}>
-            {/* Updated Instruction Text */}
             {isBreathing ? "Tap to stop" : "Tap to breathe"}
           </Text>
         </Pressable>

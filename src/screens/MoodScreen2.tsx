@@ -1,336 +1,831 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
+  Animated,
+  Easing,
+  StyleSheet,
+  Dimensions,
+  Modal,
   ScrollView,
-  ActivityIndicator,
+  Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import { ArrowLeft, CheckCircle } from "lucide-react-native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { RootStackParamList } from "../../App"; // Ensure your App.tsx is updated with the missing screens!
+import * as Linking from "expo-linking";
 import * as Haptics from "expo-haptics";
+import {
+  Phone,
+  Wind,
+  Eye,
+  Hand,
+  Ear,
+  Activity,
+  Pizza,
+  X,
+  MapPin,
+  Settings,
+  Shield,
+  Quote,
+  Users,
+  BookOpen,
+} from "lucide-react-native";
+import { colors } from "../theme/colors";
 import { initDB } from "../utils/db";
 
-// Define the type for our SQLite mood entries
-type MoodEntry = {
-  id: number;
-  emoji: string;
-  label: string;
-  timestamp: string;
-};
+const { width, height } = Dimensions.get("window");
 
-const moods = [
-  { emoji: "😩", label: "Struggling", color: "#74b9ff" },
-  { emoji: "🫤", label: "Meh", color: "#a29bfe" },
-  { emoji: "😶", label: "Okay", color: "#55E6C1" },
-  { emoji: "🙂", label: "Good", color: "#55E6C1" },
-  { emoji: "🤩", label: "Great", color: "#fab1a0" },
-];
+const StruggleScreen = () => {
+  const isFocused = useIsFocused();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-const MoodScreen = () => {
-  const navigation = useNavigation();
-  const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const scaleValue = useRef(new Animated.Value(1)).current;
+  const isBreathingRef = useRef(false);
+  const insets = useSafeAreaInsets();
 
-  const [logs, setLogs] = useState<MoodEntry[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(true);
+  // Trackers for animation-synced haptics
+  const lastScaleRef = useRef(1);
+  const lastHapticScaleRef = useRef(1);
 
-  // Use a ref to hold the timeout ID so we can clear it if the component unmounts
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isBreathing, setIsBreathing] = useState(false);
+  const [groundingModalVisible, setGroundingModalVisible] = useState(false);
+  const [safeTeamModalVisible, setSafeTeamModalVisible] = useState(false);
+  const [mantrasModalVisible, setMantrasModalVisible] = useState(false);
+  const [groundingStep, setGroundingStep] = useState(0);
+  const [contacts, setContacts] = useState<
+    { id: number; name: string; phone: string }[]
+  >([]);
+  const [mantras, setMantras] = useState<{ id: number; text: string }[]>([]);
+  const [activeMantraIndex, setActiveMantraIndex] = useState(0);
 
-  const fetchMoods = async () => {
+  const loadData = async () => {
     try {
       const db = await initDB();
-      const result = await db.getAllAsync<MoodEntry>(
-        "SELECT * FROM moods ORDER BY timestamp DESC LIMIT 14",
+      const allContacts = await db.getAllAsync<{
+        id: number;
+        name: string;
+        phone: string;
+      }>("SELECT * FROM contacts");
+      setContacts(allContacts);
+
+      const allMantras = await db.getAllAsync<{ id: number; text: string }>(
+        "SELECT * FROM mantras",
       );
-      setLogs(result);
+      setMantras(allMantras);
     } catch (error) {
-      console.error("Failed to fetch mood history:", error);
-    } finally {
-      setLoadingLogs(false);
+      console.error("Failed to load data:", error);
     }
   };
 
   useEffect(() => {
-    fetchMoods();
+    if (isFocused) {
+      loadData();
+    }
+  }, [isFocused]);
 
-    // Cleanup function: If the user manually leaves the screen before the timeout finishes,
-    // this clears the timeout to prevent a memory leak and state update warnings.
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+  // --- NEW: Synced Haptic Listener ---
+  useEffect(() => {
+    const listenerId = scaleValue.addListener(({ value }) => {
+      if (!isBreathingRef.current) return;
+
+      const isHolding = value === lastScaleRef.current;
+      const isInhaling = value > lastScaleRef.current;
+      const isExhaling = value < lastScaleRef.current;
+
+      // Only trigger haptics if we are actively scaling (not holding)
+      if (!isHolding) {
+        // Trigger a thump every time the scale changes by 0.125
+        if (Math.abs(value - lastHapticScaleRef.current) >= 0.125) {
+          lastHapticScaleRef.current = value;
+
+          let style = Haptics.ImpactFeedbackStyle.Medium;
+
+          if (isInhaling) {
+            if (value < 1.33) style = Haptics.ImpactFeedbackStyle.Light;
+            else if (value < 1.66) style = Haptics.ImpactFeedbackStyle.Medium;
+            else style = Haptics.ImpactFeedbackStyle.Heavy;
+          } else if (isExhaling) {
+            if (value > 1.66) style = Haptics.ImpactFeedbackStyle.Heavy;
+            else if (value > 1.33) style = Haptics.ImpactFeedbackStyle.Medium;
+            else style = Haptics.ImpactFeedbackStyle.Light;
+          }
+
+          Haptics.impactAsync(style);
+        }
       }
+
+      lastScaleRef.current = value;
+    });
+
+    return () => {
+      scaleValue.removeListener(listenerId);
     };
-  }, []);
+  }, [scaleValue]);
 
-  const saveMood = async (emoji: string, label: string) => {
-    setSelectedMood(label);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  // Handle Mantra Cycling (Text drift is imperceptible compared to haptic drift, so setInterval is fine here)
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
 
-    try {
-      const db = await initDB();
-      const result = await db.runAsync(
-        "INSERT INTO moods (emoji, label) VALUES (?, ?)",
-        [emoji, label],
-      );
+    if (isBreathing && mantras.length > 1) {
+      // Cycle to the next mantra every 12 seconds (matching the breath cycle)
+      interval = setInterval(() => {
+        setActiveMantraIndex((prevIndex) => (prevIndex + 1) % mantras.length);
+      }, 12000);
+    } else if (!isBreathing) {
+      setActiveMantraIndex(0);
+    }
 
-      setSaved(true);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isBreathing, mantras.length]);
 
-      // Optimistic UI Update: Instead of fetching the entire history again,
-      // construct the new entry and unshift it to the local state instantly.
-      const newEntry: MoodEntry = {
-        id: result.lastInsertRowId,
-        emoji,
-        label,
-        // Mimicking SQLite's CURRENT_TIMESTAMP format for the optimistic display
-        timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
-      };
+  const groundingExercises = [
+    {
+      icon: <Eye color={colors.primary} size={40} />,
+      title: "5 Things You Can See",
+      desc: "Look around and notice five things you hadn't noticed before.",
+    },
+    {
+      icon: <Hand color={colors.primary} size={40} />,
+      title: "4 Things You Can Feel",
+      desc: "Notice the texture of your clothes, the surface you are touching.",
+    },
+    {
+      icon: <Ear color={colors.primary} size={40} />,
+      title: "3 Things You Can Hear",
+      desc: "Listen closely. Can you hear the hum of a fridge? The wind?",
+    },
+    {
+      icon: <Activity color={colors.primary} size={40} />,
+      title: "2 Things You Can Smell",
+      desc: "Breathe in. What scents are in the air around you?",
+    },
+    {
+      icon: <Pizza color={colors.primary} size={40} />,
+      title: "1 Thing You Can Taste",
+      desc: "Take a sip of water or notice the current taste in your mouth.",
+    },
+  ];
 
-      setLogs((prevLogs) => [newEntry, ...prevLogs].slice(0, 14));
-
-      // Give the user a moment to see the success state before navigating
-      timeoutRef.current = setTimeout(() => {
-        navigation.goBack();
-      }, 2500);
-    } catch (error) {
-      console.error("Failed to save mood:", error);
+  const toggleBreathing = () => {
+    if (isBreathingRef.current) {
+      stopBreathing();
+    } else {
+      startBreathing();
     }
   };
 
-  // Safely format the SQLite timestamp
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Unknown Date";
+  const startBreathing = () => {
+    isBreathingRef.current = true;
+    setIsBreathing(true);
 
-    // Convert '2026-05-04 13:49:02' to '2026-05-04T13:49:02Z' for strict JS engines
-    const safeDateString = dateString.replace(" ", "T") + "Z";
-    const date = new Date(safeDateString);
+    // Reset trackers for a clean start
+    lastScaleRef.current = 1;
+    lastHapticScaleRef.current = 1;
 
-    return date.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Visual Animation (4s Inhale -> 2s Pause -> 4s Exhale -> 2s Pause)
+    const inhale = Animated.timing(scaleValue, {
+      toValue: 2,
+      duration: 4000,
+      useNativeDriver: true,
+      easing: Easing.inOut(Easing.ease),
     });
+    const holdFull = Animated.timing(scaleValue, {
+      toValue: 2,
+      duration: 2000,
+      useNativeDriver: true,
+    });
+    const exhale = Animated.timing(scaleValue, {
+      toValue: 1,
+      duration: 4000,
+      useNativeDriver: true,
+      easing: Easing.inOut(Easing.ease),
+    });
+    const holdEmpty = Animated.timing(scaleValue, {
+      toValue: 1,
+      duration: 2000,
+      useNativeDriver: true,
+    });
+
+    Animated.loop(
+      Animated.sequence([inhale, holdFull, exhale, holdEmpty]),
+    ).start();
+  };
+
+  const stopBreathing = () => {
+    isBreathingRef.current = false;
+    setIsBreathing(false);
+    scaleValue.stopAnimation();
+
+    Animated.timing(scaleValue, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const nextGroundingStep = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (groundingStep < groundingExercises.length - 1) {
+      setGroundingStep(groundingStep + 1);
+    } else {
+      setGroundingModalVisible(false);
+      setGroundingStep(0);
+    }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        >
-          <ArrowLeft color="#55E6C1" size={28} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Daily Check-in</Text>
-      </View>
+    <View style={styles.container}>
+      <Pressable
+        style={[styles.headerRightButton, { top: insets.top + 10, right: 16 }]}
+        onPress={() => navigation.navigate("Settings")}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+      >
+        <Settings color={colors.lightGray} size={24} />
+      </Pressable>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10 },
+        ]}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!isBreathing} // Lock scroll while breathing
       >
-        <Text style={styles.question}>How are you feeling right now?</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Ease</Text>
+          <Text style={styles.subtitle}>
+            {!isBreathing
+              ? "Breathe with the circle"
+              : mantras.length > 0
+                ? mantras[activeMantraIndex].text
+                : "This too shall pass."}
+          </Text>
+        </View>
 
-        <View style={styles.moodGrid}>
-          {moods.map((mood) => (
+        <Pressable style={styles.bubbleContainer} onPress={toggleBreathing}>
+          <Animated.View
+            style={[
+              styles.breathingCircle,
+              { transform: [{ scale: scaleValue }] },
+            ]}
+            pointerEvents="none"
+          >
+            <Wind color={colors.primary} size={40} />
+          </Animated.View>
+          <Text style={styles.instructionText}>
+            {isBreathing ? "Tap to stop" : "Tap to breathe"}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.moodCheckButton}
+          onPress={() => navigation.navigate("Mood")}
+          hitSlop={{ top: 15, bottom: 15, left: 20, right: 20 }}
+        >
+          <Text style={styles.moodCheckText}>Log your mood</Text>
+        </Pressable>
+
+        <View style={styles.buttonGroup}>
+          <View style={styles.row}>
             <Pressable
-              key={mood.label}
-              accessibilityRole="button"
-              accessibilityLabel={`Log mood as ${mood.label}`}
-              style={[
-                styles.moodButton,
-                selectedMood === null && { borderColor: "#55E6C1" }, // Default state handled here
-                selectedMood === mood.label && {
-                  borderColor: mood.color,
-                  backgroundColor: "#34495e",
-                },
-              ]}
-              onPress={() => saveMood(mood.emoji, mood.label)}
-              disabled={saved}
+              style={styles.halfButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSafeTeamModalVisible(true);
+              }}
             >
-              <Text style={styles.emoji}>{mood.emoji}</Text>
-              <Text style={[styles.moodLabel, { color: mood.color }]}>
-                {mood.label}
-              </Text>
+              <Users color={colors.primary} size={24} />
+              <Text style={styles.buttonText}>Safe Team</Text>
             </Pressable>
-          ))}
-        </View>
 
-        {saved && (
-          <View style={styles.successContainer}>
-            <CheckCircle color="#55E6C1" size={40} />
-            <Text style={styles.successText}>
-              Mood logged. Be kind to yourself today.
-            </Text>
+            <Pressable
+              style={styles.halfButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setMantrasModalVisible(true);
+              }}
+            >
+              <Quote color={colors.primary} size={24} />
+              <Text style={styles.buttonText}>Mantras</Text>
+            </Pressable>
           </View>
-        )}
 
-        {/* --- RECENT CHECK-INS SECTION --- */}
-        <View style={styles.logSection}>
-          <Text style={styles.logTitle}>Recent Check-ins</Text>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setGroundingModalVisible(true);
+            }}
+          >
+            <Eye color={colors.primary} size={24} />
+            <Text style={styles.buttonTextDark}>5-4-3-2-1 Grounding</Text>
+          </Pressable>
 
-          {loadingLogs ? (
-            <ActivityIndicator
-              size="large"
-              color="#55E6C1"
-              style={{ marginTop: 20 }}
-            />
-          ) : logs.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No moods logged yet.</Text>
-              <Text style={styles.emptySubText}>
-                Your daily check-ins will appear here.
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.logsContainer}>
-              {logs.map((item) => (
-                <View key={item.id} style={styles.logCard}>
-                  <View style={styles.logEmojiContainer}>
-                    <Text style={styles.logEmoji}>{item.emoji}</Text>
-                  </View>
-                  <View style={styles.logTextContainer}>
-                    <Text style={styles.logLabel}>{item.label}</Text>
-                    <Text style={styles.logDate}>
-                      {formatDate(item.timestamp)}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate("Resources");
+            }}
+          >
+            <MapPin color={colors.primary} size={24} />
+            <Text style={styles.buttonTextDark}>Find Local Resources</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.sosButton}
+            onPress={() => {
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Warning,
+              );
+              Linking.openURL("tel:988");
+            }}
+          >
+            <Phone color="white" size={24} />
+            <Text style={styles.sosText}>Call 988 Lifeline</Text>
+          </Pressable>
         </View>
+
+        {/* --- GROUNDING MODAL --- */}
+        <Modal
+          visible={groundingModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setGroundingModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setGroundingModalVisible(false)}
+              >
+                <X color={colors.lightGray} size={24} />
+              </Pressable>
+              <View style={styles.stepContent}>
+                {groundingExercises[groundingStep].icon}
+                <Text style={styles.stepTitle}>
+                  {groundingExercises[groundingStep].title}
+                </Text>
+                <Text style={styles.stepSubText}>
+                  {groundingExercises[groundingStep].desc}
+                </Text>
+                <Pressable
+                  style={styles.nextButton}
+                  onPress={nextGroundingStep}
+                >
+                  <Text style={styles.nextButtonText}>
+                    {groundingStep < groundingExercises.length - 1
+                      ? "Next Step"
+                      : "Finish"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* --- SAFE TEAM MODAL --- */}
+        <Modal
+          visible={safeTeamModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setSafeTeamModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainerLarge}>
+              <View style={styles.modalHeader}>
+                <View style={styles.row}>
+                  <Shield color={colors.primary} size={28} />
+                  <Text style={styles.modalTitle}>Safe Team</Text>
+                </View>
+                <Pressable
+                  onPress={() => setSafeTeamModalVisible(false)}
+                  hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                >
+                  <X color={colors.lightGray} size={28} />
+                </Pressable>
+              </View>
+
+              <ScrollView
+                style={styles.modalScroll}
+                showsVerticalScrollIndicator={false}
+              >
+                {contacts.length === 0 ? (
+                  <View style={styles.emptyStateContainer}>
+                    <Users color={colors.lightGray} size={48} />
+                    <Text style={styles.emptyStateText}>
+                      No safe contacts added yet.
+                    </Text>
+                    <Pressable
+                      style={styles.modalAddButton}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSafeTeamModalVisible(false);
+                        navigation.navigate("Settings");
+                      }}
+                    >
+                      <Text style={styles.modalAddButtonText}>
+                        Add a Contact
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <>
+                    {contacts.map((contact) => (
+                      <View key={contact.id} style={styles.dataCard}>
+                        <View>
+                          <Text style={styles.cardMain}>{contact.name}</Text>
+                          <Text style={styles.cardSub}>{contact.phone}</Text>
+                        </View>
+                        <Pressable
+                          style={styles.cardCallButton}
+                          onPress={() => {
+                            Haptics.impactAsync(
+                              Haptics.ImpactFeedbackStyle.Medium,
+                            );
+                            Linking.openURL(`tel:${contact.phone}`);
+                          }}
+                        >
+                          <Phone color={colors.secondary} size={20} />
+                        </Pressable>
+                      </View>
+                    ))}
+                    <Pressable
+                      style={styles.modalAddButtonSecondary}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSafeTeamModalVisible(false);
+                        navigation.navigate("Settings");
+                      }}
+                    >
+                      <Text style={styles.modalAddButtonTextSecondary}>
+                        + Add Another Contact
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* --- MANTRAS MODAL --- */}
+        <Modal
+          visible={mantrasModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setMantrasModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainerLarge}>
+              <View style={styles.modalHeader}>
+                <View style={styles.row}>
+                  <BookOpen color={colors.primary} size={28} />
+                  <Text style={styles.modalTitle}>My Mantras</Text>
+                </View>
+                <Pressable
+                  onPress={() => setMantrasModalVisible(false)}
+                  hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                >
+                  <X color={colors.lightGray} size={28} />
+                </Pressable>
+              </View>
+
+              <ScrollView
+                style={styles.modalScroll}
+                showsVerticalScrollIndicator={false}
+              >
+                {mantras.length === 0 ? (
+                  <View style={styles.emptyStateContainer}>
+                    <Quote color={colors.lightGray} size={48} />
+                    <Text style={styles.emptyStateText}>
+                      No mantras added yet.
+                    </Text>
+                    <Pressable
+                      style={styles.modalAddButton}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setMantrasModalVisible(false);
+                        navigation.navigate("Settings");
+                      }}
+                    >
+                      <Text style={styles.modalAddButtonText}>
+                        Add a Mantra
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <>
+                    {mantras.map((mantra) => (
+                      <View key={mantra.id} style={styles.dataCard}>
+                        <Text style={styles.cardMain}>{mantra.text}</Text>
+                      </View>
+                    ))}
+                    <Pressable
+                      style={styles.modalAddButtonSecondary}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setMantrasModalVisible(false);
+                        navigation.navigate("Settings");
+                      }}
+                    >
+                      <Text style={styles.modalAddButtonTextSecondary}>
+                        + Add Another Mantra
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#2D3436" },
-  header: { flexDirection: "row", alignItems: "center", padding: 20 },
-  backButton: { marginRight: 15 },
-  headerTitle: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "bold",
-    fontFamily: "Quicksand-Bold",
-  },
-  content: { alignItems: "center", padding: 20, paddingBottom: 40 },
-  question: {
-    color: "white",
-    fontSize: 24,
-    textAlign: "center",
-    marginBottom: 40,
-    fontFamily: "Quicksand-Bold",
-  },
-  moodGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 20,
-  },
-  moodButton: {
-    width: 100,
-    height: 120,
-    backgroundColor: "#2d3e50",
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "transparent", // Moved the base border state here
-  },
-  emoji: { fontSize: 40, marginBottom: 10 },
-  moodLabel: { fontWeight: "bold", fontFamily: "Quicksand-Bold" },
-  successContainer: {
-    marginTop: 40,
-    alignItems: "center",
-    gap: 10,
-    padding: 20,
-    backgroundColor: "#34495E", // Fixed the missing hash symbol
-    borderRadius: 16,
-  },
-  successText: {
-    color: "#B2BEC3",
-    fontSize: 16,
-    fontFamily: "Quicksand-Regular",
-    textAlign: "center",
-  },
-
-  // --- NEW LOG STYLES ---
-  logSection: {
-    width: "100%",
-    marginTop: 50,
-  },
-  logTitle: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
-    fontFamily: "Quicksand-Bold",
-    marginBottom: 16,
-    alignSelf: "flex-start",
-  },
-  emptyState: {
-    padding: 30,
-    backgroundColor: "#34495e",
-    borderRadius: 16,
-    alignItems: "center",
-  },
-  emptyText: {
-    color: "white",
-    fontSize: 16,
-    fontFamily: "Quicksand-Bold",
-  },
-  emptySubText: {
-    color: "#B2BEC3",
-    fontSize: 14,
-    fontFamily: "Quicksand-Regular",
-    marginTop: 8,
-  },
-  logsContainer: {
-    width: "100%",
-    gap: 12,
-    padding: 20,
-  },
-  logCard: {
-    flexDirection: "row",
-    backgroundColor: "#34495e",
-    padding: 16,
-    borderRadius: 16,
-    alignItems: "center",
-    width: "100%",
-    justifyContent: "space-between",
-  },
-  logEmojiContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#2d3e50",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 16,
-  },
-  logEmoji: {
-    fontSize: 24,
-  },
-  logTextContainer: {
+  container: {
     flex: 1,
+    backgroundColor: colors.dark,
   },
-  logLabel: {
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+  },
+  headerLeftButton: {
+    position: "absolute",
+    left: 0,
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
+  },
+  headerRightButton: {
+    position: "absolute",
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
+  },
+  header: {
+    width: "100%",
+    alignItems: "center",
+  },
+  title: {
     color: "white",
-    fontSize: 18,
+    fontSize: 28,
+    fontWeight: "bold",
     fontFamily: "Quicksand-Bold",
   },
-  logDate: {
-    color: "#B2BEC3",
-    fontSize: 14,
+  subtitle: {
+    color: colors.lightGray,
+    fontSize: 16,
     fontFamily: "Quicksand-Regular",
     marginTop: 4,
   },
+  bubbleContainer: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 180,
+  },
+  breathingCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(85, 230, 193, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  instructionText: {
+    color: colors.primary,
+    marginTop: 30,
+    fontSize: 16,
+    fontFamily: "Quicksand-Regular",
+  },
+  buttonGroup: {
+    width: "100%",
+    gap: 12,
+  },
+  halfButton: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    paddingVertical: 16,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 20,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+  },
+  sosButton: {
+    backgroundColor: colors.danger,
+    paddingVertical: 16,
+    borderRadius: 20,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "400",
+    fontFamily: "Quicksand",
+  },
+  buttonTextDark: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: "400",
+    fontFamily: "Quicksand",
+  },
+  sosText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "500",
+    fontFamily: "Quicksand",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    padding: 30,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingBottom: Platform.OS === "ios" ? 50 : 30,
+  },
+  modalContainerLarge: {
+    backgroundColor: colors.dark,
+    height: height * 0.85,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 24,
+    paddingBottom: Platform.OS === "ios" ? 40 : 24,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    color: "white",
+    fontSize: 26,
+    fontWeight: "bold",
+    fontFamily: "Quicksand-Bold",
+  },
+  modalScroll: {
+    flex: 1,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  closeButton: {
+    alignSelf: "flex-end",
+  },
+  stepContent: {
+    alignItems: "center",
+    gap: 20,
+  },
+  stepTitle: {
+    color: "white",
+    fontSize: 24,
+    fontWeight: "bold",
+    fontFamily: "Quicksand-Regular",
+  },
+  stepSubText: {
+    color: colors.lightGray,
+    fontSize: 18,
+    textAlign: "center",
+    fontFamily: "Quicksand-Regular",
+  },
+  nextButton: {
+    backgroundColor: colors.primary,
+    width: "100%",
+    paddingVertical: 18,
+    borderRadius: 15,
+    alignItems: "center",
+  },
+  nextButtonText: {
+    color: colors.dark,
+    fontSize: 18,
+    fontWeight: "bold",
+    fontFamily: "Quicksand-Regular",
+  },
+  dataCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 12,
+  },
+  cardMain: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 18,
+    fontFamily: "Quicksand-Regular",
+  },
+  cardSub: {
+    color: colors.lightGray,
+    fontSize: 14,
+    marginTop: 4,
+  },
+  cardCallButton: {
+    padding: 12,
+    backgroundColor: "#2d3e50",
+    borderRadius: 12,
+  },
+  moodCheckButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginBottom: 10,
+    paddingVertical: 10,
+  },
+  moodCheckText: {
+    color: colors.secondary,
+    fontSize: 16,
+    fontFamily: "Quicksand-Bold",
+    textDecorationLine: "underline",
+  },
+  emptyStateContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+    gap: 15,
+  },
+  emptyStateText: {
+    color: colors.lightGray,
+    fontSize: 16,
+    textAlign: "center",
+    fontFamily: "Quicksand-Regular",
+  },
+  modalAddButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    marginTop: 10,
+  },
+  modalAddButtonText: {
+    color: colors.dark,
+    fontSize: 16,
+    fontWeight: "bold",
+    fontFamily: "Quicksand-Bold",
+  },
+  modalAddButtonSecondary: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 20,
+    alignItems: "center",
+    marginTop: 5,
+    marginBottom: 20,
+  },
+  modalAddButtonTextSecondary: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: "bold",
+    fontFamily: "Quicksand-Bold",
+  },
 });
 
-export default MoodScreen;
+export default StruggleScreen;

@@ -172,13 +172,16 @@ const SettingsScreen = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <ArrowLeft color="#55E6C1" size={28} />
-        </Pressable>
+      <Pressable
+        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
+        onPress={() => navigation.goBack()}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+      >
+        <ArrowLeft color="#55E6C1" size={24} />
+      </Pressable>
+      <View style={styles.headerTitleContainer}>
         <Text style={styles.title}>Settings</Text>
       </View>
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -442,6 +445,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
     fontFamily: "Quicksand-Regular",
+  },
+  headerLeftButton: {
+    position: "absolute",
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
+  },
+  headerTitleContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 18, // Pushes title down to align nicely with the absolute button
+    marginBottom: 20,
   },
 });
 
