@@ -41,9 +41,18 @@ export const initDB = async () => {
       );
     `);
 
+    // Create Measurements Table
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS measurements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bpm INTEGER NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     try {
       await db.execAsync(
-        `ALTER TABLE moods ADD COLUMN label TEXT NOT NULL DEFAULT 'Okay';`,
+        "ALTER TABLE moods ADD COLUMN label TEXT NOT NULL DEFAULT 'Okay';"
       );
     } catch (e) {
       // If the column already exists, this will fail silently, which is fine
