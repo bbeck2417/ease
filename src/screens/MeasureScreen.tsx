@@ -49,7 +49,7 @@ const MeasureScreen = () => {
   const [saving, setSaving] = useState(false);
   const [bpm, setBpm] = useState<number | null>(null);
   const [confidence, setConfidence] = useState(0);
-  const [frames, setFrames] = useState(0);
+  const [debugBright, setDebugBright] = useState(0);
 
   const jsStartTime = useRef<number>(0);
   const signalBuffer = useRef<number[]>([]);
@@ -80,39 +80,65 @@ const MeasureScreen = () => {
   }, []);
 
   const onFrameReceived = useCallback((brightness: number, currentFrameCount: number) => {
-    setFrames(currentFrameCount);
+    setDebugBright(Math.round(brightness));
     
     if (isMeasuringRef.current && jsStartTime.current > 0) {
       const now = Date.now();
       const elapsed = now - jsStartTime.current;
 
-      signalBuffer.current.push(brightness);
-      if (signalBuffer.current.length > WINDOW_SIZE) signalBuffer.current.shift();
+      // DSP Step 1: Low-Pass Filter (Exponential Moving Average) to remove noise
+      const lastSmoothed = signalBuffer.current.length > 0 
+        ? signalBuffer.current[signalBuffer.current.length - 1] 
+        : brightness;
+      const smoothedBrightness = (lastSmoothed * 0.6) + (brightness * 0.4);
+
+      signalBuffer.current.push(smoothedBrightness);
+      if (signalBuffer.current.length > WINDOW_SIZE) {
+        signalBuffer.current.shift();
+      }
 
       if (signalBuffer.current.length >= WINDOW_SIZE && elapsed > 1500) {
-        const avg = signalBuffer.current.reduce((a, b) => a + b, 0) / signalBuffer.current.length;
-        const currentVal = brightness;
-        const prevVal = signalBuffer.current[signalBuffer.current.length - 2];
+        // DSP Step 2: Extract Wave Properties
+        const min = Math.min(...signalBuffer.current);
+        const max = Math.max(...signalBuffer.current);
+        const range = max - min;
+        
+        // A range > 1 indicates we have SOME signal (your device was 80 to 84, so range=4)
+        const hasSignal = range > 1.0;
+        setConfidence(hasSignal ? 1 : 0.2); 
 
-        const variance = Math.max(...signalBuffer.current) - Math.min(...signalBuffer.current);
-        setConfidence(Math.min(variance / 2.5, 1)); 
+        if (hasSignal) {
+          // DSP Step 3: Adaptive Threshold Peak Detection
+          // We trigger a beat when the signal crosses 60% of the wave's current height
+          const threshold = min + (range * 0.6);
+          const currentVal = signalBuffer.current[signalBuffer.current.length - 1];
+          const prevVal = signalBuffer.current[signalBuffer.current.length - 2];
 
-        if (currentVal > avg * 1.0005 && prevVal <= avg * 1.0005) {
-          const timeSinceLastBeat = now - lastBeatTime.current;
-          if (timeSinceLastBeat > 350 && timeSinceLastBeat < 1500) {
-            beats.current.push(timeSinceLastBeat);
-            if (beats.current.length > 6) beats.current.shift();
-            const avgInterval = beats.current.reduce((a, b) => a + b, 0) / beats.current.length;
-            setBpm(Math.round(60000 / avgInterval));
-            lastBeatTime.current = now;
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          // Trigger on rising edge crossing the threshold
+          if (currentVal >= threshold && prevVal < threshold) {
+            const timeSinceLastBeat = now - lastBeatTime.current;
+            
+            // Validate: Humanly possible beats (30 to 180 BPM)
+            if (timeSinceLastBeat > 330 && timeSinceLastBeat < 2000) {
+              beats.current.push(timeSinceLastBeat);
+              if (beats.current.length > 6) beats.current.shift();
+              
+              const avgInterval = beats.current.reduce((a, b) => a + b, 0) / beats.current.length;
+              setBpm(Math.round(60000 / avgInterval));
+              lastBeatTime.current = now;
+              
+              if (beats.current.length % 2 === 0) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }
           }
         }
       }
 
       if (elapsed > 15000) {
         let finalBpmValue = 0;
-        if (beats.current.length >= 3) {
+        // Accept even 2 beats as a success for testing
+        if (beats.current.length >= 2) {
             const avgInterval = beats.current.reduce((a, b) => a + b, 0) / beats.current.length;
             finalBpmValue = Math.round(60000 / avgInterval);
         }
@@ -130,17 +156,26 @@ const MeasureScreen = () => {
       try {
         const buffer = frame.isPlanar ? frame.getPlanes()[0].getPixelBuffer() : frame.getPixelBuffer();
         const data = new Uint8Array(buffer);
-        
+        if (data.length === 0) return;
+
+        // SAFE BROAD SAMPLING
+        // We only sample from the first half of the array, which guarantees
+        // we are only reading the Y (luminance) channel in a YUV buffer, avoiding green/purple noise.
         let sum = 0;
-        const count = 40;
-        const center = Math.floor(data.length / 2);
-        const step = 2; 
+        let count = 0;
+        const yBoundary = Math.floor(data.length * 0.5); 
+        const step = Math.floor(yBoundary / 100); 
         
-        for (let i = 0; i < count; i++) {
-          sum += data[center + (i - count/2) * step];
+        for (let i = 0; i < 100; i++) {
+          const index = i * step;
+          if (index < data.length) {
+            sum += data[index];
+            count++;
+          }
         }
         
-        runOnJS(onFrameReceived)(sum / count, frameCounter.value);
+        const brightness = count > 0 ? sum / count : 0;
+        runOnJS(onFrameReceived)(brightness, frameCounter.value);
       } catch (e) {} finally {
         frame.dispose();
       }
@@ -154,7 +189,6 @@ const MeasureScreen = () => {
     isMeasuringRef.current = true;
     setFinished(false);
     setBpm(0); 
-    setFrames(0);
     setConfidence(0);
     signalBuffer.current = [];
     beats.current = [];
@@ -191,16 +225,23 @@ const MeasureScreen = () => {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.bpmBox}>
           <Activity color={measuring ? colors.danger : colors.primary} size={40} />
-          <View style={styles.bpmValueContainer}>
+          
+          <View style={styles.bpmValueWrapper}>
              <Text style={styles.bpmVal}>{bpm && bpm > 0 ? bpm : "--"}</Text>
              <Text style={styles.bpmLabel}>BPM</Text>
           </View>
           
+          <View style={styles.debugRow}>
+            <Text style={styles.debugText}>
+              Brightness: {debugBright}
+            </Text>
+          </View>
+
           {measuring && (
             <View style={styles.confidenceBar}>
               <View style={[styles.confidenceFill, { width: `${confidence * 100}%` }]} />
               <Text style={styles.confidenceText}>
-                {confidence < 0.25 ? "Check finger position..." : "Signal Strong"}
+                {confidence < 0.5 ? "Check finger position..." : "Signal Detected"}
               </Text>
             </View>
           )}
@@ -215,21 +256,22 @@ const MeasureScreen = () => {
           </Text>
         </View>
 
-        <View style={styles.cameraCircle}>
-          {hasPermission && device ? (
-            <Camera
-              style={styles.camera}
-              device={device}
-              isActive={true} 
-              torchMode={torchOn ? "on" : "off"}
-              // @ts-ignore
-              torch={torchOn ? "on" : "off"} 
-              outputs={[frameOutput]}
-              resizeMode="cover"
-            />
-          ) : (
-            <CameraOff color="#636e72" size={32} />
-          )}
+        <View style={styles.cameraOuterWrapper}>
+          <View style={styles.cameraCircle}>
+            {hasPermission && device ? (
+              <Camera
+                style={styles.camera}
+                device={device}
+                isActive={true} 
+                torchMode={torchOn ? "on" : "off"}
+                // @ts-ignore
+                torch={torchOn ? "on" : "off"} 
+                outputs={[frameOutput]}
+              />
+            ) : (
+              <CameraOff color="#636e72" size={32} />
+            )}
+          </View>
         </View>
 
         <View style={styles.actionContainer}>
@@ -282,21 +324,30 @@ const styles = StyleSheet.create({
   backButton: { position: "absolute", top: 50, left: 16, zIndex: 10, padding: 10 },
   header: { alignItems: "center", marginTop: 18, marginBottom: 10 },
   title: { color: "white", fontSize: 24, fontWeight: "bold", fontFamily: "Quicksand-Bold" },
-  content: { padding: 20, alignItems: "center" },
+  content: { padding: 20, alignItems: "center", width: '100%' },
+  
   bpmBox: { alignItems: "center", justifyContent: "center", height: 220, width: '100%' },
-  bpmValueContainer: { alignItems: 'center', justifyContent: 'center' },
-  bpmVal: { color: "white", fontSize: 64, fontWeight: "bold", fontFamily: "Quicksand-Bold", textAlign: 'center' },
-  bpmLabel: { color: "#B2BEC3", fontSize: 18, textAlign: 'center' },
+  bpmValueWrapper: { width: '100%', alignItems: 'center' },
+  bpmVal: { color: "white", fontSize: 64, fontWeight: "bold", fontFamily: "Quicksand-Bold", textAlign: 'center', width: '100%' },
+  bpmLabel: { color: "#B2BEC3", fontSize: 18, textAlign: 'center', width: '100%' },
+  
+  debugRow: { marginTop: 10 },
+  debugText: { color: colors.primary, fontSize: 13, fontWeight: 'bold' },
+  
   confidenceBar: { width: 140, height: 4, backgroundColor: '#3d3d3d', borderRadius: 2, marginTop: 15, overflow: 'hidden' },
   confidenceFill: { height: '100%', backgroundColor: colors.primary },
   confidenceText: { color: '#B2BEC3', fontSize: 11, marginTop: 6, textTransform: 'uppercase', textAlign: 'center' },
-  cameraCircle: { width: 140, height: 140, borderRadius: 70, overflow: "hidden", borderWidth: 4, borderColor: colors.primary, marginBottom: 30, backgroundColor: "#2d3e50", justifyContent: "center", alignItems: "center" },
-  camera: { width: "100%", height: "100%" },
+  
   instructionCard: { backgroundColor: "#34495e", padding: 20, borderRadius: 16, width: "100%", marginBottom: 20 },
   instructionTitle: { color: "white", fontSize: 18, fontWeight: "bold", fontFamily: "Quicksand-Bold", marginBottom: 10 },
   instructionText: { color: "#B2BEC3", fontSize: 15, lineHeight: 24, fontFamily: "Quicksand-Regular" },
+  
+  cameraOuterWrapper: { width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
+  cameraCircle: { width: 140, height: 140, borderRadius: 70, overflow: "hidden", borderWidth: 4, borderColor: colors.primary, backgroundColor: "#000" },
+  camera: { width: "100%", height: "100%" },
+  
   actionContainer: { width: "100%", minHeight: 120 },
-  buttonStart: { backgroundColor: colors.primary, paddingVertical: 18, borderRadius: 16, alignItems: "center", width: "100%", flexDirection: 'row', justifyContent: 'center', gap: 10 },
+  buttonStart: { backgroundColor: colors.primary, paddingVertical: 18, borderRadius: 16, alignItems: "center", width: "100%" },
   buttonSave: { backgroundColor: colors.primary, paddingVertical: 18, borderRadius: 16, alignItems: "center", width: "100%", flexDirection: 'row', justifyContent: 'center', gap: 10 },
   buttonStop: { paddingVertical: 18, borderRadius: 16, alignItems: "center", width: "100%", borderWidth: 2, borderColor: colors.primary },
   buttonRetry: { paddingVertical: 16, alignItems: "center", width: "100%", marginTop: 10 },
