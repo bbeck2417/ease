@@ -1,20 +1,23 @@
 // src/screens/MeasureScreen.tsx
-
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
   Pressable,
+  Alert,
 } from "react-native";
-import { RootStackParamList } from "../../App";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { ArrowLeft, Activity, Save, CameraOff, Info } from "lucide-react-native";
+import { ArrowLeft, HeartPulse, CameraOff, Info } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import {
   Camera,
@@ -22,53 +25,43 @@ import {
   useCameraPermission,
   useFrameOutput,
 } from "react-native-vision-camera";
-import { useSharedValue, runOnJS } from "react-native-reanimated";
-import { colors } from "../theme/colors";
-import { initDB } from "../utils/db";
+import { runOnJS } from "react-native-reanimated";
 
-const screenWidth = Dimensions.get("window").width;
-const WINDOW_SIZE = 45; // 1.5 seconds
+const WINDOW_SIZE = 60; // Increased window for better baseline tracking
+const MEASUREMENT_DURATION = 20000; // 20 seconds for stability
 
 const MeasureScreen = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
   const devices = useCameraDevices();
   const device = useMemo(() => {
-    return devices.find((d) => d.id === "0") || 
-           devices.find((d) => d.position === "back" && d.hasTorch) ||
+    return devices.find((d) => d.position === "back" && d.hasTorch) || 
            devices.find((d) => d.position === "back");
   }, [devices]);
-                 
+
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [measuring, setMeasuring] = useState(false);
-  const isMeasuringRef = useRef(false);
-  const [torchOn, setTorchOn] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [bpm, setBpm] = useState<number | null>(null);
-  const [confidence, setConfidence] = useState(0);
-  const [debugBright, setDebugBright] = useState(0);
 
-  const jsStartTime = useRef<number>(0);
+  useEffect(() => {
+    if (device) {
+      console.log(`Selected Device: ${device.id}, hasTorch: ${device.hasTorch}`);
+    }
+  }, [device]);
+
+  const isMeasuringRef = useRef(false);
   const signalBuffer = useRef<number[]>([]);
   const lastBeatTime = useRef<number>(0);
   const beats = useRef<number[]>([]);
-  const frameCounter = useSharedValue<number>(0);
+  const jsStartTime = useRef<number>(0);
+  const lastValueRef = useRef<number>(0);
 
   useEffect(() => {
     if (!hasPermission) requestPermission();
   }, [hasPermission]);
-
-  useEffect(() => {
-    if (measuring) {
-      const timer = setTimeout(() => setTorchOn(true), 500); 
-      return () => clearTimeout(timer);
-    } else {
-      setTorchOn(false);
-    }
-  }, [measuring]);
 
   const onMeasurementFinished = useCallback((finalBpm: number | null) => {
     setMeasuring(false);
@@ -76,244 +69,203 @@ const MeasureScreen = () => {
     setFinished(true);
     setBpm(finalBpm || 0);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    jsStartTime.current = 0;
   }, []);
 
-  const onFrameReceived = useCallback((brightness: number, currentFrameCount: number) => {
-    setDebugBright(Math.round(brightness));
-    
-    if (isMeasuringRef.current && jsStartTime.current > 0) {
+  const processFrameData = useCallback(
+    (brightness: number) => {
+      if (!isMeasuringRef.current) return;
       const now = Date.now();
-      const elapsed = now - jsStartTime.current;
 
-      // DSP Step 1: Low-Pass Filter (Exponential Moving Average) to remove noise
-      const lastSmoothed = signalBuffer.current.length > 0 
-        ? signalBuffer.current[signalBuffer.current.length - 1] 
-        : brightness;
-      const smoothedBrightness = (lastSmoothed * 0.6) + (brightness * 0.4);
-
-      signalBuffer.current.push(smoothedBrightness);
-      if (signalBuffer.current.length > WINDOW_SIZE) {
-        signalBuffer.current.shift();
-      }
-
-      if (signalBuffer.current.length >= WINDOW_SIZE && elapsed > 1500) {
-        // DSP Step 2: Extract Wave Properties
-        const min = Math.min(...signalBuffer.current);
-        const max = Math.max(...signalBuffer.current);
-        const range = max - min;
+      if (jsStartTime.current > 0) {
+        const elapsed = now - jsStartTime.current;
         
-        // A range > 1 indicates we have SOME signal (your device was 80 to 84, so range=4)
-        const hasSignal = range > 1.0;
-        setConfidence(hasSignal ? 1 : 0.2); 
+        // Smoother filter to reduce high-frequency noise
+        const smoothedBrightness = lastValueRef.current * 0.8 + brightness * 0.2;
+        lastValueRef.current = smoothedBrightness;
 
-        if (hasSignal) {
-          // DSP Step 3: Adaptive Threshold Peak Detection
-          // We trigger a beat when the signal crosses 60% of the wave's current height
-          const threshold = min + (range * 0.6);
-          const currentVal = signalBuffer.current[signalBuffer.current.length - 1];
-          const prevVal = signalBuffer.current[signalBuffer.current.length - 2];
+        signalBuffer.current.push(smoothedBrightness);
+        if (signalBuffer.current.length > WINDOW_SIZE)
+          signalBuffer.current.shift();
 
-          // Trigger on rising edge crossing the threshold
-          if (currentVal >= threshold && prevVal < threshold) {
-            const timeSinceLastBeat = now - lastBeatTime.current;
-            
-            // Validate: Humanly possible beats (30 to 180 BPM)
-            if (timeSinceLastBeat > 330 && timeSinceLastBeat < 2000) {
-              beats.current.push(timeSinceLastBeat);
-              if (beats.current.length > 6) beats.current.shift();
+        // Need at least a full window and some warm-up time
+        if (signalBuffer.current.length >= WINDOW_SIZE && elapsed > 2000) {
+          const avg = signalBuffer.current.reduce((a, b) => a + b, 0) / signalBuffer.current.length;
+          const min = Math.min(...signalBuffer.current);
+          const max = Math.max(...signalBuffer.current);
+          const range = max - min;
+
+          // Adaptive thresholding: look for values crossing 65% of the range
+          if (range > 0.5) { // Lowered range requirement to catch subtle beats
+            const threshold = min + range * 0.65;
+            const currentVal = signalBuffer.current[signalBuffer.current.length - 1];
+            const prevVal = signalBuffer.current[signalBuffer.current.length - 2];
+
+            // Rising edge detection
+            if (currentVal >= threshold && prevVal < threshold) {
+              const timeSinceLastBeat = now - lastBeatTime.current;
               
-              const avgInterval = beats.current.reduce((a, b) => a + b, 0) / beats.current.length;
-              setBpm(Math.round(60000 / avgInterval));
-              lastBeatTime.current = now;
-              
-              if (beats.current.length % 2 === 0) {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              // Standard human range: 40 BPM (1500ms) to 180 BPM (333ms)
+              if (lastBeatTime.current === 0) {
+                lastBeatTime.current = now;
+              } else if (timeSinceLastBeat > 330 && timeSinceLastBeat < 1500) {
+                beats.current.push(timeSinceLastBeat);
+                
+                // Keep longer history for a more stable average
+                if (beats.current.length > 10) beats.current.shift();
+                
+                if (beats.current.length >= 3) {
+                  const sortedBeats = [...beats.current].sort((a, b) => a - b);
+                  // Use a trimmed mean (remove fastest/slowest) to ignore outliers
+                  let sum = 0;
+                  let count = 0;
+                  const startIdx = beats.current.length > 5 ? 1 : 0;
+                  const endIdx = beats.current.length > 5 ? sortedBeats.length - 1 : sortedBeats.length;
+                  
+                  for (let i = startIdx; i < endIdx; i++) {
+                    sum += sortedBeats[i];
+                    count++;
+                  }
+                  
+                  const avgInterval = sum / count;
+                  const currentBpm = Math.round(60000 / avgInterval);
+                  setBpm(currentBpm);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+                lastBeatTime.current = now;
+              } else if (timeSinceLastBeat >= 1500) {
+                // If we waited too long, reset the beat timer but don't count it
+                lastBeatTime.current = now;
               }
             }
           }
         }
-      }
 
-      if (elapsed > 15000) {
-        let finalBpmValue = 0;
-        // Accept even 2 beats as a success for testing
-        if (beats.current.length >= 2) {
-            const avgInterval = beats.current.reduce((a, b) => a + b, 0) / beats.current.length;
-            finalBpmValue = Math.round(60000 / avgInterval);
+        if (elapsed > MEASUREMENT_DURATION) {
+          let finalValue = 0;
+          if (beats.current.length >= 4) {
+            const sortedBeats = [...beats.current].sort((a, b) => a - b);
+            const midBeats = sortedBeats.slice(1, -1); // Trim outliers
+            const avgInterval = midBeats.reduce((a, b) => a + b, 0) / midBeats.length;
+            finalValue = Math.round(60000 / avgInterval);
+          }
+          onMeasurementFinished(finalValue);
         }
-        onMeasurementFinished(finalBpmValue > 0 ? finalBpmValue : null);
       }
-    }
-  }, [onMeasurementFinished]);
+    },
+    [onMeasurementFinished],
+  );
 
   const frameOutput = useFrameOutput({
-    onFrame: (frame) => {
+    onFrame: (frame: any) => {
       "worklet";
       if (!frame.isValid) return;
-      frameCounter.value = frameCounter.value + 1;
-      
-      try {
-        const buffer = frame.isPlanar ? frame.getPlanes()[0].getPixelBuffer() : frame.getPixelBuffer();
-        const data = new Uint8Array(buffer);
-        if (data.length === 0) return;
 
-        // SAFE BROAD SAMPLING
-        // We only sample from the first half of the array, which guarantees
-        // we are only reading the Y (luminance) channel in a YUV buffer, avoiding green/purple noise.
+      try {
+        const buffer = frame.getPixelBuffer();
+        const data = new Uint8Array(buffer);
         let sum = 0;
-        let count = 0;
-        const yBoundary = Math.floor(data.length * 0.5); 
-        const step = Math.floor(yBoundary / 100); 
-        
-        for (let i = 0; i < 100; i++) {
-          const index = i * step;
-          if (index < data.length) {
-            sum += data[index];
-            count++;
-          }
+        const sampleCount = 200; // Increased sample count for better noise reduction
+        const step = Math.floor(data.length / (3 * sampleCount));
+
+        for (let i = 0; i < sampleCount; i++) {
+          sum += data[i * step];
         }
-        
-        const brightness = count > 0 ? sum / count : 0;
-        runOnJS(onFrameReceived)(brightness, frameCounter.value);
-      } catch (e) {} finally {
+        runOnJS(processFrameData)(sum / sampleCount);
+      } catch (e) {
+      } finally {
         frame.dispose();
       }
     },
-    pixelFormat: 'yuv'
+    pixelFormat: "yuv",
   });
 
   const startMeasurement = () => {
     if (!hasPermission || !device) return;
-    setMeasuring(true);
-    isMeasuringRef.current = true;
-    setFinished(false);
-    setBpm(0); 
-    setConfidence(0);
+    
     signalBuffer.current = [];
     beats.current = [];
     lastBeatTime.current = 0;
+    lastValueRef.current = 0;
+    
+    setMeasuring(true);
+    isMeasuringRef.current = true;
+    setFinished(false);
+    setBpm(0);
     jsStartTime.current = Date.now();
-    frameCounter.value = 0;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const saveMeasurement = async () => {
-    if (!bpm || bpm === 0) return;
-    setSaving(true);
-    try {
-      const db = await initDB();
-      await db.runAsync("INSERT INTO measurements (bpm, timestamp) VALUES (?, ?)", [bpm, new Date().toISOString()]);
-      navigation.navigate("History");
-    } catch (error) {
-      navigation.navigate("History");
-    } finally {
-      setSaving(false);
-    }
+  const showIPhoneTip = () => {
+    Alert.alert(
+      "iPhone Connection Tip",
+      "If you see 'No developer servers found' on iPhone, try:\n\n1. Ensure both devices are on the exact same Wi-Fi.\n2. Use 'npx expo start --tunnel' to bypass network restrictions.",
+      [{ text: "OK" }]
+    );
   };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-        <ArrowLeft color={colors.primary} size={24} />
-      </Pressable>
-
       <View style={styles.header}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <ArrowLeft color="#55E6C1" size={28} />
+        </Pressable>
         <Text style={styles.title}>BPM Reader</Text>
+        <Pressable onPress={showIPhoneTip} style={styles.infoButton}>
+          <Info color="#B2BEC3" size={24} />
+        </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.bpmBox}>
-          <Activity color={measuring ? colors.danger : colors.primary} size={40} />
-          
-          <View style={styles.bpmValueWrapper}>
-             <Text style={styles.bpmVal}>{bpm && bpm > 0 ? bpm : "--"}</Text>
-             <Text style={styles.bpmLabel}>BPM</Text>
-          </View>
-          
-          <View style={styles.debugRow}>
-            <Text style={styles.debugText}>
-              Brightness: {debugBright}
-            </Text>
-          </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.vitalsCard}>
+          <HeartPulse color={measuring ? "#ff7675" : "#55E6C1"} size={48} />
+          <Text style={styles.bpmText}>{bpm !== null && bpm > 0 ? bpm : "--"}</Text>
+          <Text style={styles.unitText}>BPM</Text>
+        </View>
 
-          {measuring && (
-            <View style={styles.confidenceBar}>
-              <View style={[styles.confidenceFill, { width: `${confidence * 100}%` }]} />
-              <Text style={styles.confidenceText}>
-                {confidence < 0.5 ? "Check finger position..." : "Signal Detected"}
-              </Text>
-            </View>
+        <View style={styles.cameraContainer}>
+          {hasPermission && device ? (
+            /* @ts-ignore - bypassing the CameraViewProps conflict */
+            <Camera
+              key={device.id}
+              style={styles.camera}
+              device={device}
+              isActive={true}
+              torchMode={measuring ? "on" : "off"}
+              video={true}
+              outputs={[frameOutput]}
+            />
+          ) : (
+            <CameraOff color="#B2BEC3" size={32} />
           )}
         </View>
 
-        <View style={styles.instructionCard}>
-          <Text style={styles.instructionTitle}>How to measure</Text>
-          <Text style={styles.instructionText}>
-            1. Lightly cover the REAR CAMERA lens and flash.{"\n"}
-            2. Keep your finger still for 15 seconds.{"\n"}
-            3. Do not press too hard!
+        <Text style={styles.instructionText}>
+          {measuring 
+            ? "Keep your finger steady over the camera lens and flash..." 
+            : "Place your finger over the camera and flash, then press Start."}
+        </Text>
+
+        <TouchableOpacity
+          style={[
+            styles.mainButton,
+            measuring && { backgroundColor: "#d63031" },
+          ]}
+          onPress={
+            measuring
+              ? () => {
+                  setMeasuring(false);
+                  isMeasuringRef.current = false;
+                }
+              : startMeasurement
+          }
+        >
+          <Text style={styles.buttonText}>
+            {measuring ? "Cancel" : "Start Reading"}
           </Text>
-        </View>
-
-        <View style={styles.cameraOuterWrapper}>
-          <View style={styles.cameraCircle}>
-            {hasPermission && device ? (
-              <Camera
-                style={styles.camera}
-                device={device}
-                isActive={true} 
-                torchMode={torchOn ? "on" : "off"}
-                // @ts-ignore
-                torch={torchOn ? "on" : "off"} 
-                outputs={[frameOutput]}
-              />
-            ) : (
-              <CameraOff color="#636e72" size={32} />
-            )}
-          </View>
-        </View>
-
-        <View style={styles.actionContainer}>
-          {!measuring && !finished && (
-            <TouchableOpacity style={styles.buttonStart} onPress={startMeasurement}>
-              <Text style={styles.buttonTextDark}>Start Measurement</Text>
-            </TouchableOpacity>
-          )}
-
-          {measuring && (
-            <TouchableOpacity
-              style={styles.buttonStop}
-              onPress={() => {
-                setMeasuring(false);
-                isMeasuringRef.current = false;
-                setBpm(null);
-                jsStartTime.current = 0;
-              }}
-            >
-              <Text style={styles.buttonTextLight}>Cancel</Text>
-            </TouchableOpacity>
-          )}
-
-          {finished && (
-            <View style={{ width: '100%' }}>
-              {bpm && bpm > 0 ? (
-                <TouchableOpacity style={styles.buttonSave} onPress={saveMeasurement} disabled={saving}>
-                  <Save color="#2D3436" size={20} />
-                  <Text style={styles.buttonTextDark}>{saving ? "Saving..." : "Save to History"}</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.errorBox}>
-                  <Info color={colors.danger} size={20} />
-                  <Text style={styles.errorText}>Low signal quality. Try again.</Text>
-                </View>
-              )}
-              <TouchableOpacity style={styles.buttonRetry} onPress={startMeasurement}>
-                <Text style={styles.buttonTextLight}>Measure Again</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -321,40 +273,56 @@ const MeasureScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#2D3436" },
-  backButton: { position: "absolute", top: 50, left: 16, zIndex: 10, padding: 10 },
-  header: { alignItems: "center", marginTop: 18, marginBottom: 10 },
-  title: { color: "white", fontSize: 24, fontWeight: "bold", fontFamily: "Quicksand-Bold" },
-  content: { padding: 20, alignItems: "center", width: '100%' },
-  
-  bpmBox: { alignItems: "center", justifyContent: "center", height: 220, width: '100%' },
-  bpmValueWrapper: { width: '100%', alignItems: 'center' },
-  bpmVal: { color: "white", fontSize: 64, fontWeight: "bold", fontFamily: "Quicksand-Bold", textAlign: 'center', width: '100%' },
-  bpmLabel: { color: "#B2BEC3", fontSize: 18, textAlign: 'center', width: '100%' },
-  
-  debugRow: { marginTop: 10 },
-  debugText: { color: colors.primary, fontSize: 13, fontWeight: 'bold' },
-  
-  confidenceBar: { width: 140, height: 4, backgroundColor: '#3d3d3d', borderRadius: 2, marginTop: 15, overflow: 'hidden' },
-  confidenceFill: { height: '100%', backgroundColor: colors.primary },
-  confidenceText: { color: '#B2BEC3', fontSize: 11, marginTop: 6, textTransform: 'uppercase', textAlign: 'center' },
-  
-  instructionCard: { backgroundColor: "#34495e", padding: 20, borderRadius: 16, width: "100%", marginBottom: 20 },
-  instructionTitle: { color: "white", fontSize: 18, fontWeight: "bold", fontFamily: "Quicksand-Bold", marginBottom: 10 },
-  instructionText: { color: "#B2BEC3", fontSize: 15, lineHeight: 24, fontFamily: "Quicksand-Regular" },
-  
-  cameraOuterWrapper: { width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
-  cameraCircle: { width: 140, height: 140, borderRadius: 70, overflow: "hidden", borderWidth: 4, borderColor: colors.primary, backgroundColor: "#000" },
-  camera: { width: "100%", height: "100%" },
-  
-  actionContainer: { width: "100%", minHeight: 120 },
-  buttonStart: { backgroundColor: colors.primary, paddingVertical: 18, borderRadius: 16, alignItems: "center", width: "100%" },
-  buttonSave: { backgroundColor: colors.primary, paddingVertical: 18, borderRadius: 16, alignItems: "center", width: "100%", flexDirection: 'row', justifyContent: 'center', gap: 10 },
-  buttonStop: { paddingVertical: 18, borderRadius: 16, alignItems: "center", width: "100%", borderWidth: 2, borderColor: colors.primary },
-  buttonRetry: { paddingVertical: 16, alignItems: "center", width: "100%", marginTop: 10 },
-  buttonTextDark: { color: "#2D3436", fontSize: 18, fontWeight: "bold" },
-  buttonTextLight: { color: colors.primary, fontSize: 16, fontWeight: "bold" },
-  errorBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, backgroundColor: 'rgba(231, 76, 60, 0.1)', borderRadius: 12, marginBottom: 10 },
-  errorText: { color: colors.danger, fontWeight: 'bold' }
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 60,
+  },
+  backButton: { position: "absolute", left: 20 },
+  infoButton: { position: "absolute", right: 20 },
+  title: { color: "white", fontSize: 24, fontFamily: "Quicksand-Bold" },
+  scrollContent: { padding: 24, alignItems: "center" },
+  vitalsCard: {
+    backgroundColor: "#34495e",
+    width: "100%",
+    borderRadius: 30,
+    padding: 40,
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  bpmText: {
+    color: "white",
+    fontSize: 72,
+    fontFamily: "Quicksand-Bold",
+    marginTop: 10,
+  },
+  unitText: { color: "#B2BEC3", fontSize: 18, fontFamily: "Quicksand-Regular" },
+  cameraContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: "hidden",
+    marginBottom: 24,
+    backgroundColor: "black",
+  },
+  camera: { flex: 1 },
+  instructionText: {
+    color: "#B2BEC3",
+    fontSize: 16,
+    fontFamily: "Quicksand-Regular",
+    textAlign: "center",
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  mainButton: {
+    backgroundColor: "#55E6C1",
+    width: "100%",
+    paddingVertical: 20,
+    borderRadius: 20,
+    alignItems: "center",
+  },
+  buttonText: { color: "#2D3436", fontSize: 18, fontFamily: "Quicksand-Bold" },
 });
 
 export default MeasureScreen;

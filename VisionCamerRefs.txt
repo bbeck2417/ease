@@ -1,0 +1,276 @@
+# VisionCamera documentation
+
+Use the `.mdx` page endpoints for source-friendly markdown. Use `/llms-full.txt` for the full corpus.
+
+## Guides
+
+- A Barcode: https://visioncamera.margelo.com/docs/a-barcode.mdx
+- A Depth Frame: https://visioncamera.margelo.com/docs/a-depth-frame.mdx
+- A Frame: https://visioncamera.margelo.com/docs/a-frame.mdx
+- A Frame's NativeBuffer: https://visioncamera.margelo.com/docs/a-frames-nativebuffer.mdx
+- A Photo: https://visioncamera.margelo.com/docs/a-photo.mdx
+- A ScannedObject: https://visioncamera.margelo.com/docs/a-scannedobject.mdx
+- Async Frame Processing: https://visioncamera.margelo.com/docs/async-frame-processing.mdx
+- Barcode Scanner vs Object Output: https://visioncamera.margelo.com/docs/barcode-scanner-vs-object-output.mdx
+- The Barcode Scanner: https://visioncamera.margelo.com/docs/barcode-scanner.mdx
+- Camera Controller: https://visioncamera.margelo.com/docs/camera-controller.mdx
+- Camera Extensions: https://visioncamera.margelo.com/docs/camera-extensions.mdx
+- Camera Outputs: https://visioncamera.margelo.com/docs/camera-outputs.mdx
+- Camera Session: https://visioncamera.margelo.com/docs/camera-session.mdx
+- <Camera />: https://visioncamera.margelo.com/docs/camera-view.mdx
+- <CodeScanner />: https://visioncamera.margelo.com/docs/codescanner-view.mdx
+- Constraints API: https://visioncamera.margelo.com/docs/constraints.mdx
+- Coordinate Systems: https://visioncamera.margelo.com/docs/coordinate-systems.mdx
+- Implementing a custom native CameraOutput: https://visioncamera.margelo.com/docs/custom-native-camera-outputs.mdx
+- The Depth Output: https://visioncamera.margelo.com/docs/depth-output.mdx
+- Camera Devices: https://visioncamera.margelo.com/docs/devices.mdx
+- Exposure Bias: https://visioncamera.margelo.com/docs/exposure-bias.mdx
+- FPS: https://visioncamera.margelo.com/docs/fps.mdx
+- The Frame Output: https://visioncamera.margelo.com/docs/frame-output.mdx
+- Getting Started: https://visioncamera.margelo.com/docs.mdx
+- Lifecycle: https://visioncamera.margelo.com/docs/lifecycle.mdx
+- Location: https://visioncamera.margelo.com/docs/location.mdx
+- Locking AE/AF/AWB: https://visioncamera.margelo.com/docs/locking-ae-af-awb.mdx
+- Low Light Boost: https://visioncamera.margelo.com/docs/low-light-boost.mdx
+- Multi-Camera: https://visioncamera.margelo.com/docs/multi-camera.mdx
+- Native Frame Processor Plugins: https://visioncamera.margelo.com/docs/native-frame-processor-plugins.mdx
+- <NativeFrameRendererView />: https://visioncamera.margelo.com/docs/nativeframerenderer-view.mdx
+- <NativePreviewView />: https://visioncamera.margelo.com/docs/nativepreview-view.mdx
+- The Object Output: https://visioncamera.margelo.com/docs/object-output.mdx
+- Orientation: https://visioncamera.margelo.com/docs/orientation.mdx
+- Performance: https://visioncamera.margelo.com/docs/performance.mdx
+- Photo HDR: https://visioncamera.margelo.com/docs/photo-hdr.mdx
+- Photo Output Callbacks: https://visioncamera.margelo.com/docs/photo-output-callbacks.mdx
+- The Photo Output: https://visioncamera.margelo.com/docs/photo-output.mdx
+- Configuring Photo Quality: https://visioncamera.margelo.com/docs/photo-quality.mdx
+- Pixel Formats Map: https://visioncamera.margelo.com/docs/pixel-formats-map.mdx
+- The Preview Output: https://visioncamera.margelo.com/docs/preview-output.mdx
+- Capturing RAW Photos: https://visioncamera.margelo.com/docs/raw-photos.mdx
+- The Recorder: https://visioncamera.margelo.com/docs/recorder.mdx
+- Resizing/Converting Frames: https://visioncamera.margelo.com/docs/resizer.mdx
+- Skia Frame Processors: https://visioncamera.margelo.com/docs/skia-frame-processors.mdx
+- <SkiaCamera />: https://visioncamera.margelo.com/docs/skiacamera-view.mdx
+- Snapshot Capture: https://visioncamera.margelo.com/docs/snapshot-capture.mdx
+- Tap To Focus: https://visioncamera.margelo.com/docs/tap-to-focus.mdx
+- Video HDR: https://visioncamera.margelo.com/docs/video-hdr.mdx
+- The Video Output: https://visioncamera.margelo.com/docs/video-output.mdx
+- Video Stabilization: https://visioncamera.margelo.com/docs/video-stabilization.mdx
+- Zooming: https://visioncamera.margelo.com/docs/zooming.mdx
+
+## API Reference
+
+- API Reference: https://visioncamera.margelo.com/api.mdx
+- react-native-vision-camera: https://visioncamera.margelo.com/api/react-native-vision-camera.mdx
+- react-native-vision-camera-barcode-scanner: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner.mdx
+- react-native-vision-camera-location: https://visioncamera.margelo.com/api/react-native-vision-camera-location.mdx
+- react-native-vision-camera-resizer: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer.mdx
+- react-native-vision-camera-skia: https://visioncamera.margelo.com/api/react-native-vision-camera-skia.mdx
+- react-native-vision-camera-worklets: https://visioncamera.margelo.com/api/react-native-vision-camera-worklets.mdx
+- addOnCameraDevicesChangedListener: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/addOnCameraDevicesChangedListener.mdx
+- getAllCameraDevices: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/getAllCameraDevices.mdx
+- getCameraDevice: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/getCameraDevice.mdx
+- getDefaultCameraDevice: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/getDefaultCameraDevice.mdx
+- getSupportedExtensions: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/getSupportedExtensions.mdx
+- isScannedCode: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/isScannedCode.mdx
+- isScannedFace: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/isScannedFace.mdx
+- useAsyncRunner: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useAsyncRunner.mdx
+- useCamera: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useCamera.mdx
+- useCameraDevice: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useCameraDevice.mdx
+- useCameraDeviceExtensions: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useCameraDeviceExtensions.mdx
+- useCameraDevices: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useCameraDevices.mdx
+- useCameraPermission: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useCameraPermission.mdx
+- useDepthOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useDepthOutput.mdx
+- useFrameOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useFrameOutput.mdx
+- useFrameRenderer: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useFrameRenderer.mdx
+- useMicrophonePermission: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useMicrophonePermission.mdx
+- useObjectOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useObjectOutput.mdx
+- useOrientation: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useOrientation.mdx
+- usePhotoOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/usePhotoOutput.mdx
+- usePreviewOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/usePreviewOutput.mdx
+- useVideoOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/functions/useVideoOutput.mdx
+- CameraCalibrationData: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraCalibrationData.mdx
+- CameraController: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraController.mdx
+- CameraDepthFrameOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraDepthFrameOutput.mdx
+- CameraDevice: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraDevice.mdx
+- CameraDeviceFactory: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraDeviceFactory.mdx
+- CameraExtension: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraExtension.mdx
+- CameraFactory: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraFactory.mdx
+- CameraFrameOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraFrameOutput.mdx
+- CameraObjectOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraObjectOutput.mdx
+- CameraOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraOutput.mdx
+- CameraOutputSynchronizer: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraOutputSynchronizer.mdx
+- CameraPhotoOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraPhotoOutput.mdx
+- CameraPreviewOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraPreviewOutput.mdx
+- CameraSession: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraSession.mdx
+- CameraSessionConfig: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraSessionConfig.mdx
+- CameraVideoOutput: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/CameraVideoOutput.mdx
+- Depth: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/Depth.mdx
+- Frame: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/Frame.mdx
+- FrameConverter: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/FrameConverter.mdx
+- FramePlane: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/FramePlane.mdx
+- FrameRenderer: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/FrameRenderer.mdx
+- GestureController: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/GestureController.mdx
+- Location: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/Location.mdx
+- MeteringPoint: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/MeteringPoint.mdx
+- NativeThread: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/NativeThread.mdx
+- NativeThreadFactory: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/NativeThreadFactory.mdx
+- OrientationManager: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/OrientationManager.mdx
+- Photo: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/Photo.mdx
+- Recorder: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/Recorder.mdx
+- ScannedCode: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/ScannedCode.mdx
+- ScannedFace: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/ScannedFace.mdx
+- ScannedObject: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/ScannedObject.mdx
+- TapToFocusGestureController: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/TapToFocusGestureController.mdx
+- ZoomGestureController: https://visioncamera.margelo.com/api/react-native-vision-camera/hybrid-objects/ZoomGestureController.mdx
+- AsyncRunner: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/AsyncRunner.mdx
+- BinnedConstraint: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/BinnedConstraint.mdx
+- BoundingBox: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/BoundingBox.mdx
+- CameraControllerConfiguration: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/CameraControllerConfiguration.mdx
+- CameraOutputConfiguration: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/CameraOutputConfiguration.mdx
+- CameraProps: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/CameraProps.mdx
+- CameraRef: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/CameraRef.mdx
+- CameraSessionConfiguration: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/CameraSessionConfiguration.mdx
+- CameraSessionConnection: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/CameraSessionConnection.mdx
+- CameraViewProps: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/CameraViewProps.mdx
+- CapturePhotoCallbacks: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/CapturePhotoCallbacks.mdx
+- CapturePhotoSettings: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/CapturePhotoSettings.mdx
+- DepthFrameOutputOptions: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/DepthFrameOutputOptions.mdx
+- DeviceFilter: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/DeviceFilter.mdx
+- DynamicRange: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/DynamicRange.mdx
+- FPSConstraint: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/FPSConstraint.mdx
+- FocusOptions: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/FocusOptions.mdx
+- FrameOutputOptions: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/FrameOutputOptions.mdx
+- FrameRendererViewMethods: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/FrameRendererViewMethods.mdx
+- FrameRendererViewProps: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/FrameRendererViewProps.mdx
+- ListenerSubscription: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/ListenerSubscription.mdx
+- NativeBuffer: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/NativeBuffer.mdx
+- ObjectOutputOptions: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/ObjectOutputOptions.mdx
+- PermissionState: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/PermissionState.mdx
+- PhotoFile: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/PhotoFile.mdx
+- PhotoHDRConstraint: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/PhotoHDRConstraint.mdx
+- PhotoOutputOptions: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/PhotoOutputOptions.mdx
+- PixelFormatConstraint: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/PixelFormatConstraint.mdx
+- Point: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/Point.mdx
+- PreviewStabilizationModeConstraint: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/PreviewStabilizationModeConstraint.mdx
+- PreviewViewMethods: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/PreviewViewMethods.mdx
+- PreviewViewProps: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/PreviewViewProps.mdx
+- Range: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/Range.mdx
+- RecorderSettings: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/RecorderSettings.mdx
+- ResolutionBiasConstraint: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/ResolutionBiasConstraint.mdx
+- RuntimeThread: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/RuntimeThread.mdx
+- RuntimeThreadProvider: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/RuntimeThreadProvider.mdx
+- Size: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/Size.mdx
+- TargetDynamicRange: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/TargetDynamicRange.mdx
+- UseDepthOutputProps: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/UseDepthOutputProps.mdx
+- UseFrameOutputProps: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/UseFrameOutputProps.mdx
+- UseObjectOutputProps: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/UseObjectOutputProps.mdx
+- VideoDynamicRangeConstraint: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/VideoDynamicRangeConstraint.mdx
+- VideoOutputOptions: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/VideoOutputOptions.mdx
+- VideoOutputSettings: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/VideoOutputSettings.mdx
+- VideoStabilizationModeConstraint: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/VideoStabilizationModeConstraint.mdx
+- WhiteBalanceGains: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/WhiteBalanceGains.mdx
+- WhiteBalanceTemperatureAndTint: https://visioncamera.margelo.com/api/react-native-vision-camera/interfaces/WhiteBalanceTemperatureAndTint.mdx
+- CommonDynamicRanges: https://visioncamera.margelo.com/api/react-native-vision-camera/variables/CommonDynamicRanges.mdx
+- CommonResolutions: https://visioncamera.margelo.com/api/react-native-vision-camera/variables/CommonResolutions.mdx
+- HybridFrameConverter: https://visioncamera.margelo.com/api/react-native-vision-camera/variables/HybridFrameConverter.mdx
+- VisionCamera: https://visioncamera.margelo.com/api/react-native-vision-camera/variables/VisionCamera.mdx
+- AutoFocusSystem: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/AutoFocusSystem.mdx
+- AuxilaryDepthType: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/AuxilaryDepthType.mdx
+- CameraExtensionType: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/CameraExtensionType.mdx
+- CameraOrientation: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/CameraOrientation.mdx
+- CameraPosition: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/CameraPosition.mdx
+- ColorRange: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/ColorRange.mdx
+- ColorSpace: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/ColorSpace.mdx
+- Constraint: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/Constraint.mdx
+- DepthDataAccuracy: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/DepthDataAccuracy.mdx
+- DepthDataQuality: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/DepthDataQuality.mdx
+- DepthPixelFormat: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/DepthPixelFormat.mdx
+- DeviceType: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/DeviceType.mdx
+- DynamicRangeBitDepth: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/DynamicRangeBitDepth.mdx
+- ExposureMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/ExposureMode.mdx
+- FlashMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/FlashMode.mdx
+- FocusMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/FocusMode.mdx
+- FocusResponsiveness: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/FocusResponsiveness.mdx
+- FrameDroppedReason: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/FrameDroppedReason.mdx
+- FrameRendererView: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/FrameRendererView.mdx
+- InterruptionReason: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/InterruptionReason.mdx
+- MediaType: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/MediaType.mdx
+- MeteringMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/MeteringMode.mdx
+- MirrorMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/MirrorMode.mdx
+- OrientationSource: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/OrientationSource.mdx
+- OutputStreamType: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/OutputStreamType.mdx
+- PermissionStatus: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/PermissionStatus.mdx
+- PhotoContainerFormat: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/PhotoContainerFormat.mdx
+- PhysicalDeviceType: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/PhysicalDeviceType.mdx
+- PixelFormat: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/PixelFormat.mdx
+- PreviewImplementationMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/PreviewImplementationMode.mdx
+- PreviewResizeMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/PreviewResizeMode.mdx
+- PreviewView: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/PreviewView.mdx
+- QualityPrioritization: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/QualityPrioritization.mdx
+- RecorderFileType: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/RecorderFileType.mdx
+- RecordingFinishedReason: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/RecordingFinishedReason.mdx
+- ScannedObjectType: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/ScannedObjectType.mdx
+- SceneAdaptiveness: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/SceneAdaptiveness.mdx
+- StabilizationMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/StabilizationMode.mdx
+- TargetColorRange: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/TargetColorRange.mdx
+- TargetColorSpace: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/TargetColorSpace.mdx
+- TargetDynamicRangeBitDepth: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/TargetDynamicRangeBitDepth.mdx
+- TargetPhotoContainerFormat: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/TargetPhotoContainerFormat.mdx
+- TargetStabilizationMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/TargetStabilizationMode.mdx
+- TargetVideoPixelFormat: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/TargetVideoPixelFormat.mdx
+- TorchMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/TorchMode.mdx
+- VideoCodec: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/VideoCodec.mdx
+- VideoPixelFormat: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/VideoPixelFormat.mdx
+- WhiteBalanceMode: https://visioncamera.margelo.com/api/react-native-vision-camera/type-aliases/WhiteBalanceMode.mdx
+- Camera: https://visioncamera.margelo.com/api/react-native-vision-camera/views/Camera.mdx
+- NativeFrameRendererView: https://visioncamera.margelo.com/api/react-native-vision-camera/views/NativeFrameRendererView.mdx
+- NativePreviewView: https://visioncamera.margelo.com/api/react-native-vision-camera/views/NativePreviewView.mdx
+- createBarcodeScanner: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/functions/createBarcodeScanner.mdx
+- createBarcodeScannerOutput: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/functions/createBarcodeScannerOutput.mdx
+- useBarcodeScanner: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/functions/useBarcodeScanner.mdx
+- useBarcodeScannerOutput: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/functions/useBarcodeScannerOutput.mdx
+- Barcode: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/hybrid-objects/Barcode.mdx
+- BarcodeScanner: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/hybrid-objects/BarcodeScanner.mdx
+- BarcodeScannerFactory: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/hybrid-objects/BarcodeScannerFactory.mdx
+- BarcodeScannerOptions: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/interfaces/BarcodeScannerOptions.mdx
+- BarcodeScannerOutputOptions: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/interfaces/BarcodeScannerOutputOptions.mdx
+- CodeScannerOptions: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/interfaces/CodeScannerOptions.mdx
+- Point: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/interfaces/Point.mdx
+- Rect: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/interfaces/Rect.mdx
+- BarcodeFormat: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/type-aliases/BarcodeFormat.mdx
+- BarcodeScannerOutputResolution: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/type-aliases/BarcodeScannerOutputResolution.mdx
+- BarcodeValueType: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/type-aliases/BarcodeValueType.mdx
+- TargetBarcodeFormat: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/type-aliases/TargetBarcodeFormat.mdx
+- CodeScanner: https://visioncamera.margelo.com/api/react-native-vision-camera-barcode-scanner/views/CodeScanner.mdx
+- createLocation: https://visioncamera.margelo.com/api/react-native-vision-camera-location/functions/createLocation.mdx
+- createLocationManager: https://visioncamera.margelo.com/api/react-native-vision-camera-location/functions/createLocationManager.mdx
+- useLocation: https://visioncamera.margelo.com/api/react-native-vision-camera-location/functions/useLocation.mdx
+- useLocationManager: https://visioncamera.margelo.com/api/react-native-vision-camera-location/functions/useLocationManager.mdx
+- LocationManager: https://visioncamera.margelo.com/api/react-native-vision-camera-location/hybrid-objects/LocationManager.mdx
+- LocationManagerFactory: https://visioncamera.margelo.com/api/react-native-vision-camera-location/hybrid-objects/LocationManagerFactory.mdx
+- ListenerSubscription: https://visioncamera.margelo.com/api/react-native-vision-camera-location/interfaces/ListenerSubscription.mdx
+- LocationManagerOptions: https://visioncamera.margelo.com/api/react-native-vision-camera-location/interfaces/LocationManagerOptions.mdx
+- LocationState: https://visioncamera.margelo.com/api/react-native-vision-camera-location/interfaces/LocationState.mdx
+- LocationAccuracy: https://visioncamera.margelo.com/api/react-native-vision-camera-location/type-aliases/LocationAccuracy.mdx
+- createResizer: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/functions/createResizer.mdx
+- isResizerAvailable: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/functions/isResizerAvailable.mdx
+- useResizer: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/functions/useResizer.mdx
+- GPUFrame: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/hybrid-objects/GPUFrame.mdx
+- Resizer: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/hybrid-objects/Resizer.mdx
+- ResizerFactory: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/hybrid-objects/ResizerFactory.mdx
+- ResizerOptions: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/interfaces/ResizerOptions.mdx
+- ChannelOrder: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/type-aliases/ChannelOrder.mdx
+- DataType: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/type-aliases/DataType.mdx
+- PixelLayout: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/type-aliases/PixelLayout.mdx
+- ResizerState: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/type-aliases/ResizerState.mdx
+- ScaleMode: https://visioncamera.margelo.com/api/react-native-vision-camera-resizer/type-aliases/ScaleMode.mdx
+- SkiaCameraProps: https://visioncamera.margelo.com/api/react-native-vision-camera-skia/interfaces/SkiaCameraProps.mdx
+- SkiaCameraRef: https://visioncamera.margelo.com/api/react-native-vision-camera-skia/interfaces/SkiaCameraRef.mdx
+- SkiaOnFrameState: https://visioncamera.margelo.com/api/react-native-vision-camera-skia/interfaces/SkiaOnFrameState.mdx
+- SkiaCamera: https://visioncamera.margelo.com/api/react-native-vision-camera-skia/views/SkiaCamera.mdx
+- createAsyncRunner: https://visioncamera.margelo.com/api/react-native-vision-camera-worklets/functions/createAsyncRunner.mdx
+- createRuntimeThreadProvider: https://visioncamera.margelo.com/api/react-native-vision-camera-worklets/functions/createRuntimeThreadProvider.mdx
+- createWorkletRuntimeForThread: https://visioncamera.margelo.com/api/react-native-vision-camera-worklets/functions/createWorkletRuntimeForThread.mdx
+- getCurrentThreadMarker: https://visioncamera.margelo.com/api/react-native-vision-camera-worklets/functions/getCurrentThreadMarker.mdx
+- WorkletQueueFactory: https://visioncamera.margelo.com/api/react-native-vision-camera-worklets/hybrid-objects/WorkletQueueFactory.mdx
+- WorkletQueue: https://visioncamera.margelo.com/api/react-native-vision-camera-worklets/type-aliases/WorkletQueue.mdx
