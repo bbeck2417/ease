@@ -17,7 +17,7 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Phone, X, UserPlus, Quote, ArrowLeft } from "lucide-react-native";
+import { UserPlus, X, ArrowLeft } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as Contacts from "expo-contacts";
 import { initDB } from "../utils/db";
@@ -66,7 +66,7 @@ const SettingsScreen = () => {
 
       setNewName("");
       setNewPhone("");
-      await loadData(); // This now works because both tables exist!
+      await loadData();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Keyboard.dismiss();
     } catch (error) {
@@ -138,15 +138,13 @@ const SettingsScreen = () => {
 
       setNewMantra("");
       await loadData();
-
-      // Dismiss the keyboard here too
       Keyboard.dismiss();
-
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error("Failed to save mantra:", error);
     }
   };
+
   const deleteItem = async (table: string, id: number) => {
     const db = await initDB();
     await db.runAsync(`DELETE FROM ${table} WHERE id = ?`, [id]);
@@ -170,18 +168,22 @@ const SettingsScreen = () => {
     setNewPhone(formatted);
   };
 
+  const hitSlop = { top: 30, bottom: 30, left: 30, right: 30 };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Pressable
-        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
+        style={[styles.headerButton, { left: 8 }]}
         onPress={() => navigation.goBack()}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        hitSlop={hitSlop}
       >
         <ArrowLeft color="#55E6C1" size={24} />
       </Pressable>
+      
       <View style={styles.headerTitleContainer}>
         <Text style={styles.title}>Settings</Text>
       </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -189,8 +191,8 @@ const SettingsScreen = () => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {/* Safe Team Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Safe Team</Text>
             <View style={styles.inputGroup}>
@@ -213,7 +215,6 @@ const SettingsScreen = () => {
                 value={newPhone}
                 maxLength={12}
                 onChangeText={handlePhoneNumberChangeText}
-                // Forces the keyboard's "Done" button to trigger the add logic
                 returnKeyType="done"
                 onSubmitEditing={addContact}
               />
@@ -253,7 +254,6 @@ const SettingsScreen = () => {
             ))}
           </View>
 
-          {/* Mantras Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>My Mantras</Text>
             <View style={styles.inputGroup}>
@@ -264,7 +264,6 @@ const SettingsScreen = () => {
                 value={newMantra}
                 onChangeText={setNewMantra}
               />
-              {/* Change backgroundColor to Seafoam Green (#55E6C1) to fix the 'greyed out' look */}
               <Pressable
                 style={[styles.addButton, { backgroundColor: "#55E6C1" }]}
                 onPress={addMantra}
@@ -275,7 +274,6 @@ const SettingsScreen = () => {
               </Pressable>
             </View>
 
-            {/* List of Mantras will now appear here */}
             {mantras.map((m) => (
               <View key={m.id} style={styles.card}>
                 <Text style={[styles.cardMain, { flex: 1 }]}>{m.text}</Text>
@@ -288,7 +286,6 @@ const SettingsScreen = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Contacts Import Modal */}
       <Modal
         visible={isContactsModalVisible}
         animationType="slide"
@@ -336,12 +333,11 @@ const SettingsScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#2D3436" },
-  header: { flexDirection: "row", alignItems: "center", padding: 20, gap: 15 },
   title: {
     color: "white",
     fontSize: 24,
     fontWeight: "bold",
-    fontFamily: "Quicksand-Regular",
+    fontFamily: "Quicksand-Bold",
   },
   scrollContent: { padding: 20, paddingBottom: 40 },
   section: { marginBottom: 30 },
@@ -350,7 +346,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 15,
-    fontFamily: "Quicksand-Regular",
+    fontFamily: "Quicksand-Bold",
   },
   inputGroup: { gap: 10, marginBottom: 15 },
   input: {
@@ -359,6 +355,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     fontSize: 16,
+    fontFamily: "Quicksand-Regular",
   },
   addButton: {
     backgroundColor: "#55E6C1",
@@ -382,14 +379,14 @@ const styles = StyleSheet.create({
   addText: {
     color: "#2D3436",
     fontWeight: "bold",
-    fontFamily: "Quicksand-Regular",
+    fontFamily: "Quicksand-Bold",
     fontSize: 18,
     textAlign: "center",
   },
   importButtonText: {
     color: "#55E6C1",
     fontWeight: "bold",
-    fontFamily: "Quicksand-Regular",
+    fontFamily: "Quicksand-Bold",
     fontSize: 16,
     textAlign: "center",
   },
@@ -415,7 +412,6 @@ const styles = StyleSheet.create({
     fontFamily: "Quicksand-Regular",
     textAlign: "left",
   },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.8)",
@@ -438,7 +434,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 22,
     fontWeight: "bold",
-    fontFamily: "Quicksand-Regular",
+    fontFamily: "Quicksand-Bold",
   },
   emptyListText: {
     color: "#B2BEC3",
@@ -446,21 +442,21 @@ const styles = StyleSheet.create({
     marginTop: 40,
     fontFamily: "Quicksand-Regular",
   },
-  headerLeftButton: {
+  headerButton: {
     position: "absolute",
-    width: 48,
-    height: 48,
+    width: 60,
+    height: 60,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 10,
+    zIndex: 9999,
     elevation: 10,
+    backgroundColor: "transparent",
   },
   headerTitleContainer: {
     width: "100%",
+    height: 60,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 18, // Pushes title down to align nicely with the absolute button
-    marginBottom: 20,
   },
 });
 

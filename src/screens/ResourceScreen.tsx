@@ -157,7 +157,7 @@ const ResourceScreen = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Pressable
         onPress={() => navigation.goBack()}
-        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
+        style={[styles.headerLeftButton, { left: 16 }]}
         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
       >
         <ArrowLeft color="#55E6C1" size={24} />
@@ -425,8 +425,8 @@ const styles = StyleSheet.create({
   },
   headerLeftButton: {
     position: "absolute",
-    width: 48,
-    height: 48,
+    width: 60,
+    height: 60,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
@@ -434,10 +434,9 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: {
     width: "100%",
+    height: 60,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 18, // Pushes title down to align nicely with the absolute button
-    marginBottom: 20,
   },
 });
 

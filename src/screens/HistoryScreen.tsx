@@ -62,17 +62,18 @@ const HistoryScreen = () => {
     );
   };
 
+  const hitSlop = { top: 30, bottom: 30, left: 30, right: 30 };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Absolute Back Button */}
       <Pressable
-        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
+        style={styles.backButton}
         onPress={() => navigation.goBack()}
       >
         <ArrowLeft color={colors.primary} size={24} />
       </Pressable>
 
-      <View style={styles.headerTitleContainer}>
+      <View style={styles.header}>
         <Text style={styles.title}>BPM History</Text>
       </View>
 
@@ -105,10 +106,19 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: {
     width: "100%",
+    height: 60,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 18,
-    marginBottom: 20,
+  },
+  headerButton: {
+    position: "absolute",
+    width: 60,
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    elevation: 10,
+    backgroundColor: "transparent",
   },
   title: {
     color: "white",
@@ -167,14 +177,6 @@ const styles = StyleSheet.create({
     color: "#B2BEC3",
     fontSize: 15,
     textAlign: "center",
-  },
-  headerLeftButton: {
-    position: "absolute",
-    width: 48,
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
   },
 });
 
