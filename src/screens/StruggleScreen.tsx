@@ -14,10 +14,9 @@ import {
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
-  SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { RootStackParamList } from "../../App"; // Ensure your App.tsx is updated with the missing screens!
+import { RootStackParamList } from "../../App";
 import * as Linking from "expo-linking";
 import * as Haptics from "expo-haptics";
 import {
@@ -51,7 +50,6 @@ const StruggleScreen = () => {
   const isBreathingRef = useRef(false);
   const insets = useSafeAreaInsets();
 
-  // Trackers for animation-synced haptics
   const lastScaleRef = useRef(1);
   const lastHapticScaleRef = useRef(1);
 
@@ -91,7 +89,6 @@ const StruggleScreen = () => {
     }
   }, [isFocused]);
 
-  // --- NEW: Synced Haptic Listener ---
   useEffect(() => {
     const listenerId = scaleValue.addListener(({ value }) => {
       if (!isBreathingRef.current) return;
@@ -100,9 +97,7 @@ const StruggleScreen = () => {
       const isInhaling = value > lastScaleRef.current;
       const isExhaling = value < lastScaleRef.current;
 
-      // Only trigger haptics if we are actively scaling (not holding)
       if (!isHolding) {
-        // Trigger a thump every time the scale changes by 0.125
         if (Math.abs(value - lastHapticScaleRef.current) >= 0.125) {
           lastHapticScaleRef.current = value;
 
@@ -130,12 +125,10 @@ const StruggleScreen = () => {
     };
   }, [scaleValue]);
 
-  // Handle Mantra Cycling (Text drift is imperceptible compared to haptic drift, so setInterval is fine here)
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
 
     if (isBreathing && mantras.length > 1) {
-      // Cycle to the next mantra every 12 seconds (matching the breath cycle)
       interval = setInterval(() => {
         setActiveMantraIndex((prevIndex) => (prevIndex + 1) % mantras.length);
       }, 12000);
@@ -187,14 +180,10 @@ const StruggleScreen = () => {
   const startBreathing = () => {
     isBreathingRef.current = true;
     setIsBreathing(true);
-
-    // Reset trackers for a clean start
     lastScaleRef.current = 1;
     lastHapticScaleRef.current = 1;
-
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Visual Animation (4s Inhale -> 2s Pause -> 4s Exhale -> 2s Pause)
     const inhale = Animated.timing(scaleValue, {
       toValue: 2,
       duration: 4000,
@@ -247,34 +236,38 @@ const StruggleScreen = () => {
     }
   };
 
+  const hitSlop = { top: 20, bottom: 20, left: 20, right: 20 };
+
   return (
     <View style={styles.container}>
-      <Pressable
-        style={[styles.headerLeftButton, { top: insets.top + 10, left: 16 }]}
-        onPress={() => navigation.navigate("Measure")}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-      >
-        <Heart color={colors.primary} size={24} />
-      </Pressable>
-      <Pressable
-        style={[styles.headerRightButton, { top: insets.top + 10, right: 16 }]}
-        onPress={() => navigation.navigate("Settings")}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-      >
-        <Settings color={colors.lightGray} size={24} />
-      </Pressable>
+      <View style={[styles.headerBar, { paddingTop: insets.top, height: insets.top + 60 }]}>
+        <Pressable
+          style={styles.headerButtonLeft}
+          onPress={() => navigation.navigate("Measure")}
+          hitSlop={hitSlop}
+        >
+          <Heart color={colors.primary} size={28} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Ease</Text>
+        <Pressable
+          style={styles.headerButtonRight}
+          onPress={() => navigation.navigate("Settings")}
+          hitSlop={hitSlop}
+        >
+          <Settings color={colors.lightGray} size={28} />
+        </Pressable>
+      </View>
 
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10 },
+          { paddingBottom: insets.bottom + 20 },
         ]}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={!isBreathing} // Lock scroll while breathing
+        scrollEnabled={!isBreathing}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Ease</Text>
+        <View style={styles.mantraSection}>
           <Text style={styles.subtitle}>
             {!isBreathing
               ? "Breathe with the circle"
@@ -302,7 +295,7 @@ const StruggleScreen = () => {
         <Pressable
           style={styles.moodCheckButton}
           onPress={() => navigation.navigate("Mood")}
-          hitSlop={{ top: 15, bottom: 15, left: 20, right: 20 }}
+          hitSlop={hitSlop}
         >
           <Text style={styles.moodCheckText}>Log your mood</Text>
         </Pressable>
@@ -368,7 +361,6 @@ const StruggleScreen = () => {
           </Pressable>
         </View>
 
-        {/* --- GROUNDING MODAL --- */}
         <Modal
           visible={groundingModalVisible}
           animationType="slide"
@@ -406,7 +398,6 @@ const StruggleScreen = () => {
           </View>
         </Modal>
 
-        {/* --- SAFE TEAM MODAL --- */}
         <Modal
           visible={safeTeamModalVisible}
           animationType="slide"
@@ -422,7 +413,8 @@ const StruggleScreen = () => {
                 </View>
                 <Pressable
                   onPress={() => setSafeTeamModalVisible(false)}
-                  hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                  style={styles.modalCloseButton}
+                  hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                 >
                   <X color={colors.lightGray} size={28} />
                 </Pressable>
@@ -491,7 +483,6 @@ const StruggleScreen = () => {
           </View>
         </Modal>
 
-        {/* --- MANTRAS MODAL --- */}
         <Modal
           visible={mantrasModalVisible}
           animationType="slide"
@@ -507,7 +498,8 @@ const StruggleScreen = () => {
                 </View>
                 <Pressable
                   onPress={() => setMantrasModalVisible(false)}
-                  hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                  style={styles.modalCloseButton}
+                  hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                 >
                   <X color={colors.lightGray} size={28} />
                 </Pressable>
@@ -571,46 +563,54 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.dark,
   },
+  headerBar: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    backgroundColor: colors.dark,
+  },
+  headerTitle: {
+    color: "white",
+    fontSize: 28,
+    fontWeight: "bold",
+    fontFamily: "Quicksand-Bold",
+  },
+  headerButtonLeft: {
+    position: "absolute",
+    left: 8,
+    bottom: 0,
+    width: 60,
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerButtonRight: {
+    position: "absolute",
+    right: 8,
+    bottom: 0,
+    width: 60,
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   scrollContent: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
   },
-  headerLeftButton: {
-    position: "absolute",
-    left: 0,
-    width: 48,
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-    elevation: 10,
-  },
-  headerRightButton: {
-    position: "absolute",
-    width: 48,
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-    elevation: 10,
-  },
-  header: {
+  mantraSection: {
     width: "100%",
     alignItems: "center",
-  },
-  title: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "bold",
-    fontFamily: "Quicksand-Bold",
+    marginTop: 10,
   },
   subtitle: {
     color: colors.lightGray,
     fontSize: 16,
     fontFamily: "Quicksand-Regular",
-    marginTop: 4,
+    textAlign: "center",
   },
   bubbleContainer: {
     flex: 1,
@@ -714,6 +714,12 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "bold",
     fontFamily: "Quicksand-Bold",
+  },
+  modalCloseButton: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalScroll: {
     flex: 1,
