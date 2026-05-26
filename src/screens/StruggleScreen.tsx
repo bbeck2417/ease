@@ -310,18 +310,18 @@ const StruggleScreen = () => {
           <Text style={styles.moodCheckText}>Log your mood</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.secondaryButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate("Meditation");
-          }}
-        >
-          <Headphones color={colors.primary} size={24} />
-          <Text style={styles.buttonTextDark}>Meditation Sounds</Text>
-        </Pressable>
-
         <View style={styles.buttonGroup}>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate("Meditation");
+            }}
+          >
+            <Headphones color={colors.primary} size={24} />
+            <Text style={styles.buttonTextDark}>Meditation Sounds</Text>
+          </Pressable>
+
           <View style={styles.row}>
             <Pressable
               style={styles.halfButton}
