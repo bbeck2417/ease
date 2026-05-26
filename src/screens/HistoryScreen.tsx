@@ -4,14 +4,14 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   FlatList,
   ActivityIndicator,
 } from "react-native";
-import { ArrowLeft, Clock, Heart } from "lucide-react-native";
+import { Clock, Heart } from "lucide-react-native";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 import { initDB } from "../utils/db";
 import { colors } from "../theme/colors";
+import AppHeader from "../components/AppHeader";
 
 interface MeasurementRow {
   id: number;
@@ -118,26 +118,9 @@ const HistoryScreen = () => {
     );
   };
 
-  const hitSlop = { top: 20, bottom: 20, left: 20, right: 20 };
-
   return (
     <View style={styles.container}>
-      <View
-        style={[
-          styles.headerBar,
-          { paddingTop: insets.top, height: insets.top + 60 },
-        ]}
-      >
-        <Pressable
-          style={styles.headerButtonLeft}
-          onPress={() => navigation.goBack()}
-          hitSlop={hitSlop}
-        >
-          <ArrowLeft color={colors.primary} size={24} />
-        </Pressable>
-        <Text style={styles.title}>BPM History</Text>
-        <View style={styles.headerButtonRightSpacer} />
-      </View>
+      <AppHeader title="BPM History" onBackPress={() => navigation.goBack()} />
 
       {loading ? (
         <View style={styles.center}>
@@ -170,29 +153,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#2D3436",
-  },
-  headerBar: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#2D3436",
-  },
-  headerButtonLeft: {
-    position: "absolute",
-    left: 8,
-    bottom: 0,
-    width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerButtonRightSpacer: {
-    position: "absolute",
-    right: 8,
-    bottom: 0,
-    width: 60,
-    height: 60,
   },
   title: {
     color: "white",

@@ -7,14 +7,11 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { ArrowLeft, CheckCircle } from "lucide-react-native";
+import { CheckCircle } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { initDB } from "../utils/db";
+import AppHeader from "../components/AppHeader";
 
 // Define the type for our SQLite mood entries
 type MoodEntry = {
@@ -41,7 +38,6 @@ const MoodScreen = () => {
   const [logs, setLogs] = useState<MoodEntry[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const insets = useSafeAreaInsets();
 
   // Fetch the latest 14 entries from the database
   const fetchMoods = async () => {
@@ -118,19 +114,8 @@ const MoodScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-        onPress={() => navigation.goBack()}
-        style={[styles.headerLeftButton, { left: 16 }]}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-      >
-        <ArrowLeft color="#55E6C1" size={24} />
-      </Pressable>
-      <View style={styles.headerTitleContainer}>
-        <Text style={styles.headerTitle}>Daily Check-in</Text>
-      </View>
+    <View style={styles.container}>
+      <AppHeader title="Daily Check-in" onBackPress={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -213,14 +198,6 @@ const MoodScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#2D3436" },
-  header: { flexDirection: "row", alignItems: "center", padding: 20 },
-  backButton: { marginRight: 15 },
-  headerTitle: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "bold",
-    fontFamily: "Quicksand-Bold",
-  },
   content: { alignItems: "center", padding: 20, paddingBottom: 40 },
   question: {
     color: "white",
@@ -331,21 +308,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Quicksand-Regular",
     marginTop: 4,
-  },
-  headerLeftButton: {
-    position: "absolute",
-    width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-    elevation: 10,
-  },
-  headerTitleContainer: {
-    width: "100%",
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
 

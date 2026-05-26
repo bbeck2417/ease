@@ -17,7 +17,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import {
-  ArrowLeft,
   HeartPulse,
   CameraOff,
   Info,
@@ -33,6 +32,7 @@ import {
 } from "react-native-vision-camera";
 import { runOnJS } from "react-native-reanimated";
 import { initDB } from "../utils/db";
+import AppHeader from "../components/AppHeader";
 
 const WINDOW_SIZE = 60;
 const MEASUREMENT_DURATION = 20_000;
@@ -422,39 +422,28 @@ const MeasureScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View
-        style={[
-          styles.headerBar,
-          { paddingTop: insets.top, height: insets.top + 60 },
-        ]}
-      >
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={styles.headerButtonLeft}
-          hitSlop={hitSlop}
-        >
-          <ArrowLeft color="#55E6C1" size={28} />
-        </Pressable>
-
-        <Text style={styles.title}>BPM Reader</Text>
-
-        <View style={styles.headerButtonRightGroup}>
-          <Pressable
-            onPress={() => navigation.navigate("History")}
-            style={styles.headerIconButton}
-            hitSlop={hitSlop}
-          >
-            <History color="#B2BEC3" size={24} />
-          </Pressable>
-          <Pressable
-            onPress={showIPhoneTip}
-            style={styles.headerIconButton}
-            hitSlop={hitSlop}
-          >
-            <Info color="#B2BEC3" size={24} />
-          </Pressable>
-        </View>
-      </View>
+      <AppHeader
+        title="BPM Reader"
+        onBackPress={() => navigation.goBack()}
+        rightSlot={(
+          <View style={styles.headerSideRightGroup}>
+            <Pressable
+              onPress={() => navigation.navigate("History")}
+              style={styles.headerIconButton}
+              hitSlop={hitSlop}
+            >
+              <History color="#B2BEC3" size={24} pointerEvents="none" />
+            </Pressable>
+            <Pressable
+              onPress={showIPhoneTip}
+              style={styles.headerIconButton}
+              hitSlop={hitSlop}
+            >
+              <Info color="#B2BEC3" size={24} pointerEvents="none" />
+            </Pressable>
+          </View>
+        )}
+      />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -524,28 +513,8 @@ const MeasureScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#2D3436" },
-  headerBar: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#2D3436",
-    zIndex: 1000,
-  },
-  headerButtonLeft: {
-    position: "absolute",
-    left: 8,
-    bottom: 0,
-    width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerButtonRightGroup: {
-    position: "absolute",
-    right: 8,
-    bottom: 0,
-    height: 60,
+  headerSideRightGroup: {
+    height: 56,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -556,7 +525,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  title: { color: "white", fontSize: 28, fontFamily: "Quicksand-Bold" },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,

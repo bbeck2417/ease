@@ -16,17 +16,16 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { UserPlus, X, ArrowLeft } from "lucide-react-native";
+import { UserPlus, X } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as Contacts from "expo-contacts";
 import { initDB } from "../utils/db";
 import { useNavigation } from "@react-navigation/native";
+import AppHeader from "../components/AppHeader";
 
 const { height } = Dimensions.get("window");
 
 const SettingsScreen = () => {
-  const insets = useSafeAreaInsets();
   const [contacts, setContacts] = useState<
     { id: number; name: string; phone: string }[]
   >([]);
@@ -163,109 +162,73 @@ const SettingsScreen = () => {
     return cleaned;
   };
 
-  const handlePhoneNumberChangeText = (text: string) => {
+  const handlePhoneNumberChange = (text: string) => {
     const formatted = formatPhoneNumber(text);
     setNewPhone(formatted);
+    phoneInputRef.current?.setNativeProps({ text: formatted });
   };
 
-  const hitSlop = { top: 30, bottom: 30, left: 30, right: 30 };
-
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Pressable
-        style={[styles.headerButton, { left: 8 }]}
-        onPress={() => navigation.goBack()}
-        hitSlop={hitSlop}
-      >
-        <ArrowLeft color="#55E6C1" size={24} />
-      </Pressable>
-      
-      <View style={styles.headerTitleContainer}>
-        <Text style={styles.title}>Settings</Text>
-      </View>
+    <View style={styles.container}>
+      <AppHeader title="Settings" onBackPress={() => navigation.goBack()} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+          style={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Safe Team</Text>
+            <Text style={styles.sectionTitle}>Emergency Contacts</Text>
             <View style={styles.inputGroup}>
               <TextInput
-                style={styles.input}
+                ref={phoneInputRef}
                 placeholder="Name"
-                placeholderTextColor="#636e72"
                 value={newName}
                 onChangeText={setNewName}
-                returnKeyType="next"
-                onSubmitEditing={() => phoneInputRef.current?.focus()}
+                style={styles.input}
               />
               <TextInput
-                ref={phoneInputRef}
-                style={styles.input}
-                placeholder="555-555-555"
-                placeholderTextColor="#636e72"
-                keyboardType="phone-pad"
-                inputMode="tel"
+                placeholder="Phone Number"
                 value={newPhone}
-                maxLength={12}
-                onChangeText={handlePhoneNumberChangeText}
-                returnKeyType="done"
-                onSubmitEditing={addContact}
+                onChangeText={handlePhoneNumberChange}
+                style={styles.input}
+              />
+            </View>
+            <Pressable
+              style={[
+                styles.addButton,
+                (!newName.trim() || !newPhone.trim()) && styles.disabledButton,
+              ]}
+              onPress={addContact}
+            >
+              <Text style={styles.addText}>Add Contact</Text>
+            </Pressable>
+            <Pressable
+              style={styles.importButton}
+              onPress={importContactFromPhone}
+            >
+              <UserPlus color="#55E6C1" size={20} />
+              <Text style={styles.importButtonText}>Import from Phone</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Personal Mantras</Text>
+            <View style={styles.inputGroup}>
+              <TextInput
+                placeholder="Enter a mantra"
+                value={newMantra}
+                onChangeText={setNewMantra}
+                style={styles.input}
               />
               <Pressable
                 style={[
                   styles.addButton,
-                  (!newName.trim() || !newPhone.trim()) &&
-                    styles.disabledButton,
+                  !newMantra.trim() && styles.disabledButton,
                 ]}
-                onPress={addContact}
-                disabled={!newName.trim() || !newPhone.trim()}
-              >
-                <Text style={styles.addText}>Add Contact</Text>
-              </Pressable>
-              <Pressable
-                style={styles.importButton}
-                onPress={importContactFromPhone}
-              >
-                {isLoadingContacts ? (
-                  <ActivityIndicator color="#55E6C1" />
-                ) : (
-                  <UserPlus color="#55E6C1" size={20} />
-                )}
-                <Text style={styles.importButtonText}>Import From Phone</Text>
-              </Pressable>
-            </View>
-            {contacts.map((c) => (
-              <View key={c.id} style={styles.card}>
-                <View>
-                  <Text style={styles.cardMain}>{c.name}</Text>
-                  <Text style={styles.cardSub}>{c.phone}</Text>
-                </View>
-                <Pressable onPress={() => deleteItem("contacts", c.id)}>
-                  <X color="#D63031" size={20} />
-                </Pressable>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>My Mantras</Text>
-            <View style={styles.inputGroup}>
-              <TextInput
-                style={styles.input}
-                placeholder="I am safe..."
-                placeholderTextColor="#636e72"
-                value={newMantra}
-                onChangeText={setNewMantra}
-              />
-              <Pressable
-                style={[styles.addButton, { backgroundColor: "#55E6C1" }]}
                 onPress={addMantra}
               >
                 <Text style={[styles.addText, { color: "#2D3436" }]}>
@@ -302,7 +265,7 @@ const SettingsScreen = () => {
             </View>
             <FlatList
               data={phoneContacts}
-              keyExtractor={(item, index) => item.id ?? index.toString()}
+              keyExtractor={(item: any, index) => item.id ?? index.toString()}
               renderItem={({ item }) => (
                 <Pressable
                   style={styles.card}
@@ -441,22 +404,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
     fontFamily: "Quicksand-Regular",
-  },
-  headerButton: {
-    position: "absolute",
-    width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 9999,
-    elevation: 10,
-    backgroundColor: "transparent",
-  },
-  headerTitleContainer: {
-    width: "100%",
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
 

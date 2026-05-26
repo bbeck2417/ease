@@ -14,6 +14,7 @@ import SettingsScreen from "./src/screens/SettingsScreen";
 import MoodScreen from "./src/screens/MoodScreen";
 import HistoryScreen from "./src/screens/HistoryScreen";
 import MeasureScreen from "./src/screens/MeasureScreen";
+import MeditationScreen from "./src/screens/MeditationScreen";
 import { colors } from "./src/theme/colors";
 
 export type RootStackParamList = {
@@ -22,7 +23,8 @@ export type RootStackParamList = {
   Settings: undefined;
   Mood: undefined;
   History: undefined;
-  Measure: undefined
+  Measure: undefined;
+  Meditation: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -51,6 +53,7 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer theme={DarkAppTheme}>
         <Stack.Navigator
+          id="RootStack"
           initialRouteName="Struggle"
           screenOptions={{
             headerShown: false,
@@ -70,6 +73,11 @@ export default function App() {
           <Stack.Screen
             name="History"
             component={HistoryScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Meditation"
+            component={MeditationScreen}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>
