@@ -15,9 +15,9 @@ import MapView, { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
 import { useNavigation } from "@react-navigation/native";
 import * as Location from "expo-location";
 import * as Haptics from "expo-haptics";
-import { Phone, Navigation, ArrowLeft } from "lucide-react-native";
+import { Phone, Navigation } from "lucide-react-native";
 import { fetchNearbyResources, Resource } from "../data/resources";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AppHeader from "../components/AppHeader";
 
 const { height } = Dimensions.get("window");
 const CATEGORIES = [
@@ -44,8 +44,6 @@ const ResourceScreen = () => {
     CATEGORIES[0],
   );
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
-  const insets = useSafeAreaInsets();
-
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -154,17 +152,8 @@ const ResourceScreen = () => {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Pressable
-        onPress={() => navigation.goBack()}
-        style={[styles.headerLeftButton, { left: 16 }]}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-      >
-        <ArrowLeft color="#55E6C1" size={24} />
-      </Pressable>
-      <View style={styles.headerTitleContainer}>
-        <Text style={styles.headerTitle}>Resources</Text>
-      </View>
+    <View style={styles.container}>
+      <AppHeader title="Resources" onBackPress={() => navigation.goBack()} />
 
       <View style={styles.categoryContainer}>
         <ScrollView
@@ -194,64 +183,48 @@ const ResourceScreen = () => {
         </ScrollView>
       </View>
 
-      <View style={styles.mapContainer}>
-        {location ? (
+      {location ? (
+        <View style={styles.mapContainer}>
           <MapView
             ref={mapRef}
             style={styles.map}
             provider={PROVIDER_GOOGLE}
+            showsUserLocation={true}
+            followsUserLocation={true}
             initialRegion={{
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
-              latitudeDelta: 0.1,
-              longitudeDelta: 0.1,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
             }}
-            showsUserLocation={true}
           >
-            {resources.map((resource) => {
-              const isActive = activeResourceId === resource.id;
-
-              return (
-                <Marker
-                  // 🟢 Use a stable key now; the custom View handles re-renders better than pinColor
-                  key={resource.id}
-                  ref={(el) => {
-                    markerRefs.current[resource.id] = el;
-                  }}
-                  coordinate={{
-                    latitude: resource.latitude,
-                    longitude: resource.longitude,
-                  }}
-                  onPress={() => focusOnLocation(resource, true)}
-                  // 🟢 Optimization: Prevents flickering on iOS
-                  tracksViewChanges={Platform.OS === "ios" ? false : true}
-                >
-                  {/* 🟢 CUSTOM PIN COMPONENT */}
-                  <View
-                    style={[
-                      styles.customPin,
-                      { backgroundColor: isActive ? "#FF9F43" : "#55E6C1" },
-                    ]}
-                  >
-                    <View style={styles.pinInnerCore} />
-                  </View>
-
-                  <Callout tooltip>
-                    <View style={styles.calloutBox}>
-                      <Text style={styles.calloutTitle}>{resource.name}</Text>
-                      <Text style={styles.calloutDesc}>{resource.address}</Text>
-                    </View>
-                  </Callout>
-                </Marker>
-              );
-            })}
+            {resources.map((resource) => (
+              <Marker
+                key={resource.id}
+                coordinate={{
+                  latitude: resource.latitude,
+                  longitude: resource.longitude,
+                }}
+                ref={(ref) => {
+                  markerRefs.current[resource.id] = ref;
+                }}
+              >
+                <View style={styles.customPin}>
+                  <View style={styles.pinInnerCore} />
+                </View>
+                <Callout style={styles.calloutBox}>
+                  <Text style={styles.calloutTitle}>{resource.name}</Text>
+                  <Text style={styles.calloutDesc}>{resource.address}</Text>
+                </Callout>
+              </Marker>
+            ))}
           </MapView>
-        ) : (
-          <View style={[styles.map, styles.loadingCenter]}>
-            <ActivityIndicator size="large" color="#55E6C1" />
-          </View>
-        )}
-      </View>
+        </View>
+      ) : (
+        <View style={[styles.map, styles.loadingCenter]}>
+          <ActivityIndicator size="large" color="#55E6C1" />
+        </View>
+      )}
 
       <View style={styles.listSection}>
         <Text style={styles.title}>{selectedCategory} Nearby</Text>
@@ -270,7 +243,6 @@ const ResourceScreen = () => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 40 }}
             onScrollToIndexFailed={(info) => {
-              // Safety fallback for list scrolling
               flatListRef.current?.scrollToOffset({
                 offset: info.averageItemLength * info.index,
                 animated: true,
@@ -291,20 +263,6 @@ const ResourceScreen = () => {
 // ... keep your existing styles block
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#2D3436" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 15,
-    backgroundColor: "#2D3436",
-  },
-  backButton: { marginRight: 15, padding: 5 },
-  headerTitle: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "bold",
-    fontFamily: "Quicksand-Regular",
-  },
   categoryContainer: { backgroundColor: "#2D3436", paddingBottom: 15 },
   categoryScroll: { paddingHorizontal: 15, gap: 10 },
   categoryPill: {
@@ -422,21 +380,6 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: "white",
-  },
-  headerLeftButton: {
-    position: "absolute",
-    width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-    elevation: 10,
-  },
-  headerTitleContainer: {
-    width: "100%",
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
 

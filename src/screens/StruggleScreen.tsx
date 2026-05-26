@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Pressable,
+  TouchableOpacity,
   Animated,
   Easing,
   StyleSheet,
@@ -14,6 +15,7 @@ import {
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
+  SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../App";
@@ -35,9 +37,11 @@ import {
   Users,
   BookOpen,
   Heart,
+  Headphones,
 } from "lucide-react-native";
 import { colors } from "../theme/colors";
 import { initDB } from "../utils/db";
+import AppHeader from "../components/AppHeader";
 
 const { width, height } = Dimensions.get("window");
 
@@ -239,24 +243,30 @@ const StruggleScreen = () => {
   const hitSlop = { top: 20, bottom: 20, left: 20, right: 20 };
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.headerBar, { paddingTop: insets.top, height: insets.top + 60 }]}>
-        <Pressable
-          style={styles.headerButtonLeft}
-          onPress={() => navigation.navigate("Measure")}
-          hitSlop={hitSlop}
-        >
-          <Heart color={colors.primary} size={28} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Ease</Text>
-        <Pressable
-          style={styles.headerButtonRight}
-          onPress={() => navigation.navigate("Settings")}
-          hitSlop={hitSlop}
-        >
-          <Settings color={colors.lightGray} size={28} />
-        </Pressable>
-      </View>
+    <SafeAreaView style={styles.container} edges={["left", "right"]}>
+      <AppHeader
+        title="Ease"
+        leftSlot={(
+          <TouchableOpacity
+            style={styles.headerSideButton}
+            onPress={() => navigation.navigate("Measure")}
+            hitSlop={hitSlop}
+            activeOpacity={0.75}
+          >
+            <Heart color={colors.primary} size={28} pointerEvents="none" />
+          </TouchableOpacity>
+        )}
+        rightSlot={(
+          <TouchableOpacity
+            style={styles.headerSideButton}
+            onPress={() => navigation.navigate("Settings")}
+            hitSlop={hitSlop}
+            activeOpacity={0.75}
+          >
+            <Settings color={colors.lightGray} size={28} pointerEvents="none" />
+          </TouchableOpacity>
+        )}
+      />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -298,6 +308,17 @@ const StruggleScreen = () => {
           hitSlop={hitSlop}
         >
           <Text style={styles.moodCheckText}>Log your mood</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.secondaryButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate("Meditation");
+          }}
+        >
+          <Headphones color={colors.primary} size={24} />
+          <Text style={styles.buttonTextDark}>Meditation Sounds</Text>
         </Pressable>
 
         <View style={styles.buttonGroup}>
@@ -372,8 +393,9 @@ const StruggleScreen = () => {
               <Pressable
                 style={styles.closeButton}
                 onPress={() => setGroundingModalVisible(false)}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
               >
-                <X color={colors.lightGray} size={24} />
+                <X color={colors.lightGray} size={24} pointerEvents="none" />
               </Pressable>
               <View style={styles.stepContent}>
                 {groundingExercises[groundingStep].icon}
@@ -416,7 +438,7 @@ const StruggleScreen = () => {
                   style={styles.modalCloseButton}
                   hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                 >
-                  <X color={colors.lightGray} size={28} />
+                  <X color={colors.lightGray} size={28} pointerEvents="none" />
                 </Pressable>
               </View>
 
@@ -501,7 +523,7 @@ const StruggleScreen = () => {
                   style={styles.modalCloseButton}
                   hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                 >
-                  <X color={colors.lightGray} size={28} />
+                  <X color={colors.lightGray} size={28} pointerEvents="none" />
                 </Pressable>
               </View>
 
@@ -554,7 +576,7 @@ const StruggleScreen = () => {
           </View>
         </Modal>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -563,35 +585,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.dark,
   },
-  headerBar: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 9999,
-    backgroundColor: colors.dark,
-  },
-  headerTitle: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "bold",
-    fontFamily: "Quicksand-Bold",
-  },
-  headerButtonLeft: {
-    position: "absolute",
-    left: 8,
-    bottom: 0,
+  headerSideButton: {
     width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerButtonRight: {
-    position: "absolute",
-    right: 8,
-    bottom: 0,
-    width: 60,
-    height: 60,
+    height: 56,
     alignItems: "center",
     justifyContent: "center",
   },
